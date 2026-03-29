@@ -3,84 +3,71 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Архив Родословия (Автосохранение)</title>
+    <title>Чистое Родословие</title>
     
     <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js"></script>
     
     <style>
-        body { margin: 0; background-color: #3e2723; font-family: 'Times New Roman', serif; overflow: hidden; }
-        #scroll-wrapper { width: 100vw; height: 100vh; background: #fdf5e6; position: relative; overflow: hidden; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: #fdf5e6; overflow: hidden; }
         
-        /* Компактный заголовок с управлением */
-        .header { 
-            position: absolute; top: 0; left: 0; right: 0; 
-            padding: 10px 20px; display: flex; justify-content: space-between; align-items: center;
-            background: rgba(253, 245, 230, 0.9); z-index: 100; 
-            border-bottom: 2px double #5d4037;
+        /* Контейнер на весь экран */
+        #tree-container { 
+            width: 100vw; 
+            height: 100vh; 
+            cursor: grab;
+            background-image: radial-gradient(#d2b48c 0.5px, transparent 0.5px);
+            background-size: 30px 30px;
         }
 
-        #tree-container { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
-
         /* КОНТЕКСТНОЕ МЕНЮ */
-        #context-menu { display: none; position: fixed; background: #fff; border: 2px solid #5d4037; box-shadow: 4px 4px 15px rgba(0,0,0,0.4); z-index: 9999; min-width: 200px; }
-        #context-menu div { padding: 10px 15px; cursor: pointer; border-bottom: 1px solid #eee; font-size: 14px; }
+        #context-menu { 
+            display: none; position: fixed; background: #fff; 
+            border: 2px solid #5d4037; box-shadow: 4px 4px 15px rgba(0,0,0,0.4); 
+            z-index: 9999; min-width: 180px; font-family: sans-serif;
+        }
+        #context-menu div { padding: 10px 15px; cursor: pointer; border-bottom: 1px solid #eee; font-size: 14px; color: #333; }
         #context-menu div:hover { background: #f0e6d2; }
 
         /* МОДАЛЬНОЕ ОКНО */
-        #info-modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 320px; background: #fffcf5; border: 5px double #5d4037; padding: 25px; z-index: 10000; box-shadow: 0 0 50px rgba(0,0,0,0.5); text-align: center; }
-        #modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9998; }
+        #info-modal { 
+            display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+            width: 300px; background: #fffcf5; border: 5px double #5d4037; padding: 20px; 
+            z-index: 10000; box-shadow: 0 0 50px rgba(0,0,0,0.5); text-align: center;
+            font-family: 'Times New Roman', serif;
+        }
+        #modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 9998; }
 
-        .nav-btn { background: #5d4037; color: white; border: none; padding: 6px 12px; cursor: pointer; border-radius: 4px; font-size: 12px; margin-left: 5px; }
-        
         /* СТИЛИ ГРАФА */
         .infoNode rect { fill: #fcf3cf !important; stroke: #b7950b !important; stroke-width: 3px !important; }
-        svg { width: 100% !important; height: 100% !important; }
+        svg { width: 100% !important; height: 100% !important; display: block; }
     </style>
 </head>
 <body>
 
 <div id="modal-overlay" onclick="closeInfo()"></div>
 <div id="info-modal">
-    <h2 id="modal-title" style="margin-top:0;">Имя</h2>
-    <hr style="border: 1px double #5d4037;">
-    <p id="modal-desc" style="font-style: italic; white-space: pre-wrap;">Описание отсутствует</p>
+    <h2 id="modal-title" style="margin:0;"></h2>
+    <hr style="border: 1px double #5d4037; margin: 10px 0;">
+    <p id="modal-desc" style="font-style: italic; white-space: pre-wrap; color: #3e2723;"></p>
     <button onclick="closeInfo()" style="margin-top:15px; width: 100%; background: #5d4037; color: white; border: none; padding: 8px; cursor: pointer;">Закрыть</button>
 </div>
 
 <div id="context-menu">
     <div onclick="menuAction('edit')">✏️ Изменить имя</div>
-    <div onclick="menuAction('info')" id="menu-info-btn">📝 Добавить информацию</div>
+    <div onclick="menuAction('info')" id="menu-info-btn">📝 Информация</div>
     <div onclick="menuAction('add')">➕ Добавить потомка</div>
-    <div onclick="menuAction('delete')" style="color: #d32f2f;">❌ Удалить узел</div>
+    <div onclick="menuAction('delete')" style="color: #d32f2f;">❌ Удалить</div>
 </div>
 
-<div id="scroll-wrapper">
-    <div class="header">
-        <div>
-            <h2 style="margin:0; font-size: 18px; display: inline-block;">КНИГА РОДОСЛОВИЯ</h2>
-            <span style="font-size: 12px; margin-left: 10px; color: #795548;">ЛКМ — инфо / ПКМ — меню</span>
-        </div>
-        <div>
-            <button class="nav-btn" onclick="resetView()">Центрировать</button>
-            <button class="nav-btn" onclick="clearAllData()" style="background: #a00;">Очистить всё</button>
-        </div>
-    </div>
-    
-    <div id="tree-container"></div>
-</div>
+<div id="tree-container"></div>
 
 <script>
     let selectedNodeId = null;
     
-    // Начальные данные (если в памяти ничего нет)
-    const defaultGraph = `graph TD
-    Adam[Адам] --> Seth[Сиф]
-    Seth --> Enos[Енос]`;
-    
+    const defaultGraph = `graph TD\n    Adam[Адам] --> Seth[Сиф]`;
     const defaultInfo = { "Adam": "Первый человек." };
 
-    // Загрузка данных из localStorage
     let currentGraphDefinition = localStorage.getItem('genealogy_graph') || defaultGraph;
     let nodesData = JSON.parse(localStorage.getItem('genealogy_info')) || defaultInfo;
 
@@ -90,22 +77,18 @@
         const container = document.getElementById('tree-container');
         if (window.panZoom) window.panZoom.destroy();
 
-        // Сохраняем текущее состояние в память
         localStorage.setItem('genealogy_graph', currentGraphDefinition);
         localStorage.setItem('genealogy_info', JSON.stringify(nodesData));
 
-        // Стилизация узлов с информацией
         let styleInjections = "";
-        Object.keys(nodesData).forEach(id => {
-            styleInjections += `\n    class ${id} infoNode`;
-        });
+        Object.keys(nodesData).forEach(id => { styleInjections += `\n    class ${id} infoNode`; });
 
         const fullDefinition = currentGraphDefinition + styleInjections;
 
         try {
             const { svg } = await mermaid.render('mermaid-svg-' + Date.now(), fullDefinition);
             container.innerHTML = svg;
-            setTimeout(initPanZoom, 50);
+            setTimeout(initPanZoom, 20);
         } catch (err) { console.error(err); }
     }
 
@@ -117,31 +100,32 @@
                 controlIconsEnabled: false, 
                 fit: true, 
                 center: true,
-                minZoom: 0.05
+                minZoom: 0.01,
+                maxZoom: 100
             });
         }
     }
 
-    // Обработка кликов (ЛКМ и ПКМ)
     window.addEventListener('mousedown', function(e) {
         const node = e.target.closest('.node');
-        if (!node) return;
+        if (!node) {
+            if (e.button === 0) document.getElementById('context-menu').style.display = 'none';
+            return;
+        }
 
-        // Извлекаем ID (формат flowchart-ID-индекс)
         const parts = node.getAttribute('id').split('-');
         selectedNodeId = parts[1];
 
-        if (e.button === 2) { // ПКМ
+        if (e.button === 2) {
             e.preventDefault();
             const infoBtn = document.getElementById('menu-info-btn');
-            infoBtn.innerText = nodesData[selectedNodeId] ? "📝 Редактировать инфо" : "📝 Добавить информацию";
-            
+            infoBtn.innerText = nodesData[selectedNodeId] ? "📝 Изменить инфо" : "📝 Добавить инфо";
             const menu = document.getElementById('context-menu');
             menu.style.display = 'block';
             menu.style.left = e.pageX + 'px';
             menu.style.top = e.pageY + 'px';
         } 
-        else if (e.button === 0) { // ЛКМ
+        else if (e.button === 0) {
             if (nodesData[selectedNodeId]) showInfo(selectedNodeId);
         }
     });
@@ -163,16 +147,17 @@
 
     function menuAction(type) {
         if (!selectedNodeId) return;
+        document.getElementById('context-menu').style.display = 'none';
 
         if (type === 'info') {
-            const newInfo = prompt("Информация о персонаже:", nodesData[selectedNodeId] || "");
+            const newInfo = prompt("Описание:", nodesData[selectedNodeId] || "");
             if (newInfo !== null) {
                 if (newInfo.trim() === "") delete nodesData[selectedNodeId];
                 else nodesData[selectedNodeId] = newInfo;
             }
         } 
         else if (type === 'edit') {
-            const newName = prompt("Изменить имя:", "");
+            const newName = prompt("Имя:");
             if (newName) {
                 const regex = new RegExp(`${selectedNodeId}\\[.*?\\]`, 'g');
                 currentGraphDefinition = currentGraphDefinition.replace(regex, `${selectedNodeId}[${newName}]`);
@@ -186,28 +171,14 @@
             }
         }
         else if (type === 'delete') {
-            if (confirm("Удалить этот узел?")) {
+            if (confirm("Удалить?")) {
                 const lines = currentGraphDefinition.split('\n');
                 currentGraphDefinition = lines.filter(line => !line.includes(selectedNodeId)).join('\n');
                 delete nodesData[selectedNodeId];
             }
         }
-        document.getElementById('context-menu').style.display = 'none';
         renderGraph();
     }
-
-    function clearAllData() {
-        if (confirm("Вы уверены, что хотите полностью очистить древо?")) {
-            localStorage.clear();
-            location.reload();
-        }
-    }
-
-    window.addEventListener('click', (e) => {
-        if (!e.target.closest('#context-menu')) document.getElementById('context-menu').style.display = 'none';
-    });
-
-    function resetView() { if (window.panZoom) { window.panZoom.reset(); window.panZoom.fit(); window.panZoom.center(); } }
 
     window.onload = renderGraph;
 </script>
