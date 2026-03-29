@@ -2,57 +2,35 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Библейское Древо: Фикс видимости</title>
+    <title>Библейское Древо: Интерактив</title>
     <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js"></script>
     <style>
-        /* Базовый фон страницы — теперь он точно не будет белым */
         body, html { 
             margin: 0; padding: 0; width: 100%; height: 100%; 
-            background-color: #fdf5e6 !important; 
-            overflow: hidden; 
+            background-color: #fdf5e6; overflow: hidden; 
         }
         
-        /* Контейнер для схемы */
         #tree-viewer { 
-            width: 100vw; 
-            height: 100vh; 
-            position: absolute;
-            top: 0; left: 0;
-            cursor: grab;
-            background: #fdf5e6 !important;
-            z-index: 1;
+            width: 100vw; height: 100vh; 
+            position: absolute; top: 0; left: 0;
+            cursor: grab; background: #fdf5e6;
         }
 
-        /* Убираем любые перекрывающие рамки Mermaid */
-        .mermaid {
-            height: 100%;
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        /* Стили окна информации (оно должно быть ВЫШЕ всего) */
-        #overlay { 
-            display: none; position: fixed; top: 0; left: 0; 
-            width: 100%; height: 100%; background: rgba(0,0,0,0.6); 
-            z-index: 100; 
-        }
+        /* Окно информации */
+        #overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100; }
         #infobox {
             display: none; position: fixed; z-index: 110; 
             left: 50%; top: 50%; transform: translate(-50%, -50%);
-            width: 300px; background: #fffcf5; padding: 25px; 
-            border: 4px double #5d4037; text-align: center;
-            font-family: 'Georgia', serif;
+            width: 320px; background: #fffcf5; padding: 25px; 
+            border: 4px double #8b4513; text-align: center;
+            font-family: 'Georgia', serif; box-shadow: 0 10px 40px rgba(0,0,0,0.4);
         }
-        .close-btn { margin-top: 15px; background: #5d4037; color: white; border: none; padding: 10px 20px; cursor: pointer; }
+        .close-btn { margin-top: 15px; background: #8b4513; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 4px; }
 
-        /* Фикс для SVG: убираем ограничение по размеру */
-        svg { 
-            max-width: none !important; 
-            display: block !important;
-        }
+        /* Стиль для кликабельных узлов в SVG */
+        .clickable-node { cursor: pointer !important; }
+        .clickable-node:hover rect { fill: #fff3e0 !important; stroke-width: 3px !important; }
     </style>
 </head>
 <body>
@@ -60,16 +38,16 @@
 <div id="overlay" onclick="closeInfo()"></div>
 <div id="infobox">
     <h2 id="p-name" style="margin:0; color:#5d4037;">Имя</h2>
-    <hr style="border:0; border-top:1px solid #5d4037; margin: 10px 0;">
+    <hr style="border:0; border-top:1px solid #8b4513; margin: 10px 0;">
     <p><strong>Мать:</strong> <span id="p-mother">-</span></p>
-    <p id="p-desc" style="font-size: 14px; color: #333;">Описание</p>
+    <p id="p-desc" style="font-size: 15px; line-height: 1.4; color: #333;">Описание</p>
     <button class="close-btn" onclick="closeInfo()">Закрыть</button>
 </div>
 
 <div id="tree-viewer">
     <div class="mermaid">
         graph TD
-            %% --- СХЕМА ---
+            %% --- СТРУКТУРА ---
             Адам --> Каин & Авель & Сиф
             Каин --> Енох_К[Енох] --> Ирад --> Мехиаэль --> Мафусал_К[Мафусал] --> Ламех_К[Ламех]
             Ламех_К --> Явал & Ювал & Тувал-Каин & Наама
@@ -84,7 +62,7 @@
             Иехония --> Салафиил & Педая --> Зоровавель
             Зоровавель --> Авиуд --> Элиаким --> Азор --> Садок --> Ахим --> Элиуд --> Элеазар --> Матфан --> Иаков_Н[Иаков] --> Иосиф_Н[Иосиф]
 
-            %% --- ОБРАБОТКА КЛИКОВ ---
+            %% --- КЛИКИ (ID должны совпадать с именами) ---
             click Адам call showInfo()
             click Каин call showInfo()
             click Явал call showInfo()
@@ -96,32 +74,34 @@
             click Зоровавель call showInfo()
             click Иосиф_Н call showInfo()
 
-            classDef important fill:#efdfbb,stroke:#8b4513,stroke-width:2px;
-            class Адам,Ной,Авраам,Давид,Соломон,Зоровавель,Иосиф_Н important;
+            %% --- СТИЛИЗАЦИЯ РАМОК ---
+            %% Класс infoBoxed добавляет жирную золотистую рамку для тех, у кого есть инфо
+            classDef infoBoxed fill:#fff9f0,stroke:#d4af37,stroke-width:4px,color:#3e2723;
+            classDef normal fill:#fdf5e6,stroke:#8b4513,stroke-width:1px;
+
+            class Адам,Каин,Явал,Наама,Соломон,Ровоам,Авия,Иехония,Зоровавель,Иосиф_Н infoBoxed;
     </div>
 </div>
 
 <script>
-    // База данных
     const familyData = {
-        "Адам": { name: "Адам", mother: "Бог (Творец)", desc: "Первый человек." },
-        "Каин": { name: "Каин", mother: "Ева", desc: "Первенец Адама и Евы." },
+        "Адам": { name: "Адам", mother: "Бог", desc: "Первый человек, сотворенный по образу Божию." },
+        "Каин": { name: "Каин", mother: "Ева", desc: "Первенец человечества, земледелец." },
         "Явал": { name: "Явал", mother: "Ада", desc: "Отец живущих в шатрах и пастухов." },
-        "Наама": { name: "Наама", mother: "Цилла", desc: "Дочь Ламеха, сестра Тувал-Каина." },
-        "Соломон": { name: "Соломон", mother: "Вирсавия", desc: "Третий царь Израиля." },
-        "Ровоам": { name: "Ровоам", mother: "Наама", desc: "Сын Соломона." },
-        "Авия": { name: "Авия", mother: "Мааха", desc: "Царь Иудеи." },
-        "Иехония": { name: "Иехония", mother: "Нехушта", desc: "Царь периода Вавилонского плена." },
-        "Зоровавель": { name: "Зоровавель", mother: "Линия Давида", desc: "Руководитель восстановления Храма." },
-        "Иосиф_Н": { name: "Иосиф", mother: "Линия Иакова", desc: "Муж Марии." }
+        "Наама": { name: "Наама", mother: "Цилла", desc: "Дочь Ламеха, согласно преданию — жена Ноя." },
+        "Соломон": { name: "Соломон", mother: "Вирсавия", desc: "Сын Давида, мудрейший царь Израиля." },
+        "Ровоам": { name: "Ровоам", mother: "Наама (Аммонитянка)", desc: "Сын Соломона, при котором произошло разделение царства." },
+        "Авия": { name: "Авия", mother: "Мааха", desc: "Царь Иудеи, воевавший с Иеровоамом." },
+        "Иехония": { name: "Иехония", mother: "Нехушта", desc: "Царь, уведенный Навуходоносором в плен." },
+        "Зоровавель": { name: "Зоровавель", mother: "Линия Давида", desc: "Возглавил возвращение иудеев из плена." },
+        "Иосиф_Н": { name: "Иосиф", mother: "Линия Иакова", desc: "Обручник Девы Марии." }
     };
 
-    // Инициализация Mermaid с отключением лишних стилей
     mermaid.initialize({ 
         startOnLoad: true, 
         theme: 'base',
-        themeVariables: { primaryColor: '#fdf5e6', lineColor: '#8b4513' },
-        useMaxWidth: false // ВАЖНО: отключаем автоматическое ограничение ширины
+        securityLevel: 'loose', 
+        useMaxWidth: false
     });
 
     function showInfo(id) {
@@ -140,29 +120,37 @@
         document.getElementById('overlay').style.display = 'none';
     }
 
-    // Подключение зума БЕЗ белых пятен
+    // Инициализация панорамирования и зума
     window.onload = function() {
-        const checkExist = setInterval(function() {
+        const interval = setInterval(() => {
             const svg = document.querySelector('.mermaid svg');
             if (svg) {
-                clearInterval(checkExist);
-                
-                // Очистка атрибутов, которые могут создавать пустые поля
-                svg.removeAttribute('height');
-                svg.style.height = '100vh';
+                clearInterval(interval);
                 svg.style.width = '100vw';
+                svg.style.height = '100vh';
 
+                // Настройка PanZoom
                 window.pz = svgPanZoom(svg, {
                     zoomEnabled: true,
                     controlIconsEnabled: false,
                     center: true,
+                    fit: true,
                     minZoom: 0.001,
                     maxZoom: 100,
-                    fit: true,
-                    contain: false // Позволяет схеме выходить за края при зуме
+                    // Это позволяет кликам проходить сквозь слой панорамирования
+                    beforePan: function(oldPan, newPan) {
+                        return true; 
+                    }
+                });
+
+                // Добавляем класс clickable-node всем узлам, на которые можно нажать
+                document.querySelectorAll('.mermaid .node').forEach(node => {
+                    if (node.getAttribute('onclick') || node.classList.contains('infoBoxed')) {
+                        node.classList.add('clickable-node');
+                    }
                 });
             }
-        }, 200);
+        }, 300);
     };
 </script>
 </body>
