@@ -2,116 +2,106 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Библейское Древо</title>
+    <title>Библейское Древо: Чистая Версия</title>
     <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js"></script>
     <style>
-        body { margin: 0; background-color: #2b1d1a; font-family: 'Georgia', serif; overflow: hidden; }
-        #scroll-frame {
-            width: 100vw; height: 100vh;
-            background: #fdf5e6; position: relative; display: flex; flex-direction: column;
-        }
-        #tree-viewer { flex-grow: 1; cursor: grab; background: #fdf5e6; }
+        /* Убираем всё лишнее, оставляем только схему на весь экран */
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: #2b1d1a; overflow: hidden; }
         
-        /* КАРТОЧКА ИНФОРМАЦИИ */
+        #tree-viewer { 
+            width: 100vw; 
+            height: 100vh; 
+            background: #fdf5e6; /* Цвет пергамента */
+            cursor: grab;
+        }
+        #tree-viewer:active { cursor: grabbing; }
+
+        /* Всплывающее окно */
         #overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 90; }
         #infobox {
             display: none; position: fixed; z-index: 100; left: 50%; top: 50%; transform: translate(-50%, -50%);
-            width: 320px; background: #fffcf5; padding: 20px; border: 3px double #5d4037; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            width: 320px; background: #fffcf5; padding: 25px; border: 4px double #5d4037; text-align: center;
+            font-family: 'Georgia', serif; box-shadow: 0 10px 50px rgba(0,0,0,0.5);
         }
-        .close-btn { margin-top: 15px; background: #5d4037; color: white; border: none; padding: 8px 15px; cursor: pointer; }
-
-        /* МИНИ-КНОПКИ УПРАВЛЕНИЯ */
-        .zoom-controls { 
-            position: absolute; bottom: 15px; right: 15px; z-index: 10; 
-            display: flex; flex-direction: column; gap: 5px;
+        .close-btn { margin-top: 15px; background: #5d4037; color: white; border: none; padding: 10px 20px; cursor: pointer; font-family: 'Georgia', serif; }
+        
+        /* Подсказка сверху (исчезает через 5 секунд) */
+        #hint {
+            position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+            background: rgba(93, 64, 55, 0.8); color: white; padding: 5px 15px;
+            border-radius: 20px; font-family: sans-serif; font-size: 12px; z-index: 100;
+            pointer-events: none; animation: fadeOut 5s forwards;
         }
-        .zoom-controls button { 
-            width: 35px; height: 35px; border-radius: 50%;
-            background: rgba(93, 64, 55, 0.7); color: white; 
-            border: 1px solid #fdf5e6; cursor: pointer; font-size: 20px;
-            display: flex; align-items: center; justify-content: center;
-            transition: 0.3s;
-        }
-        .zoom-controls button:hover { background: rgba(93, 64, 55, 1); }
-        .btn-reset { font-size: 10px !important; text-transform: uppercase; }
-
-        header { background: #5d4037; color: #fdf5e6; text-align: center; padding: 5px; font-size: 12px; }
+        @keyframes fadeOut { 0% {opacity: 1;} 80% {opacity: 1;} 100% {opacity: 0;} }
     </style>
 </head>
 <body>
 
+<div id="hint">Колесико — масштаб, зажать мышь — движение</div>
+
 <div id="overlay" onclick="closeInfo()"></div>
 <div id="infobox">
     <h2 id="p-name" style="margin:0; color:#5d4037;">Имя</h2>
-    <hr style="border:0; border-top:1px solid #5d4037;">
-    <p><strong>Мать:</strong> <span id="p-mother">-</span></p>
-    <p id="p-desc" style="font-size: 14px;">Описание</p>
+    <hr style="border:0; border-top:1px solid #5d4037; margin: 10px 0;">
+    <p style="margin: 5px 0;"><strong>Мать:</strong> <span id="p-mother">-</span></p>
+    <p id="p-desc" style="font-size: 14px; color: #555;">Описание</p>
     <button class="close-btn" onclick="closeInfo()">Закрыть</button>
 </div>
 
-<div id="scroll-frame">
-    <header>КНИГА РОДОСЛОВИЯ: ОТ АДАМА ДО ВАВИЛОНСКОГО ПЛЕНА (Кликните на имя для деталей)</header>
+<div id="tree-viewer">
+    <div class="mermaid">
+        graph TD
+            %% --- НАЧАЛО: ПЕРВЫЕ ЛЮДИ ---
+            Адам --> Каин & Авель & Сиф
+            Каин --> Енох_К[Енох] --> Ирад --> Мехиаэль --> Мафусал_К[Мафусал] --> Ламех_К[Ламех]
+            Ламех_К --> Явал & Ювал & Тувал-Каин & Наама
+            Сиф --> Ной
+            Ной --> Сим & Хам & Яфет
+            
+            %% --- ТАБЛИЦА НАРОДОВ ---
+            Яфет --> Гомер & Магог & Мадай & Яван & Тувал & Мешех & Тирас
+            Хам --> Куш & Мицраим & Пут & Ханаан
+            Куш --> Нимрод
+            Мицраим --> Филистимляне
+            
+            %% --- ЛИНИЯ К ДАВИДУ ---
+            Сим --> Авраам --> Исаак --> Иаков
+            Иаков --> Рувим & Симеон & Левий & Иуда & Иосиф & Вениамин
+            Иуда --> Фарес --> Есром --> Арам --> Аминадав --> Наассон --> Салмон --> Вооз --> Овид --> Иессей --> Давид
+            
+            %% --- ЦАРИ (С МАТЕРЯМИ) ---
+            Давид --> Соломон
+            Соломон --> Ровоам
+            Ровоам --> Авия
+            Авия --> Аса --> Иосафат --> Иорам
+            Иорам --> Охозия & Уззия
+            Охозия --> Иоас --> Амасия --> Азария
+            Уззия --> Иофам --> Ахаз --> Езекия --> Манассия --> Амон --> Иосия
+            Иосия --> Иоаким & Седекия & Шаллум
+            Иоаким --> Иехония
+            
+            %% --- ПОСЛЕ ПЛЕНА ---
+            Иехония --> Салафиил & Педая
+            Салафиил --> Зоровавель
+            Зоровавель --> Авиуд --> Элиаким --> Азор --> Садок --> Ахим --> Элиуд --> Элеазар --> Матфан --> Иаков_Н[Иаков] --> Иосиф_Н[Иосиф]
 
-    <div id="tree-viewer">
-        <div class="mermaid">
-            graph TD
-                %% НАЧАЛО
-                Адам --> Каин & Авель & Сиф
-                Каин --> Енох_К[Енох] --> Ирад --> Мехиаэль --> Мафусал_К[Мафусал] --> Ламех_К[Ламех]
-                Ламех_К --> Явал & Ювал & Тувал-Каин & Наама
-                Сиф --> Ной
-                Ной --> Сим & Хам & Яфет
-                
-                %% НАРОДЫ
-                Яфет --> Гомер & Магог & Мадай & Яван & Тувал & Мешех & Тирас
-                Хам --> Куш & Мицраим & Пут & Ханаан
-                Куш --> Нимрод
-                Мицраим --> Филистимляне
-                
-                %% ЛИНИЯ К ДАВИДУ
-                Сим --> Авраам --> Исаак --> Иаков
-                Иаков --> Рувим & Симеон & Левий & Иуда & Иосиф & Вениамин
-                Иуда --> Фарес --> Есром --> Арам --> Аминадав --> Наассон --> Салмон --> Вооз --> Овид --> Иессей --> Давид
-                
-                %% ЦАРИ
-                Давид --> Соломон
-                Соломон --> Ровоам
-                Ровоам --> Авия
-                Авия --> Аса --> Иосафат --> Иорам
-                Иорам --> Охозия & Уззия
-                Охозия --> Иоас --> Амасия --> Азария
-                Уззия --> Иофам --> Ахаз --> Езекия --> Манассия --> Амон --> Иосия
-                Иосия --> Иоаким & Седекия & Шаллум
-                Иоаким --> Иехония
-                
-                %% ПОСЛЕ ПЛЕНА
-                Иехония --> Салафиил & Педая
-                Салафиил --> Зоровавель
-                Зоровавель --> Авиуд --> Элиаким --> Азор --> Садок --> Ахим --> Элиуд --> Элеазар --> Матфан --> Иаков_Н[Иаков] --> Иосиф_Н[Иосиф]
+            %% --- КЛИКИ ДЛЯ ИНФОРМАЦИИ ---
+            click Адам call showInfo()
+            click Каин call showInfo()
+            click Явал call showInfo()
+            click Тувал-Каин call showInfo()
+            click Наама call showInfo()
+            click Соломон call showInfo()
+            click Ровоам call showInfo()
+            click Авия call showInfo()
+            click Иехония call showInfo()
+            click Зоровавель call showInfo()
+            click Иосиф_Н call showInfo()
 
-                %% КЛИКИ (ID должны совпадать с именами в схеме)
-                click Адам call showInfo()
-                click Каин call showInfo()
-                click Явал call showInfo()
-                click Тувал-Каин call showInfo()
-                click Наама call showInfo()
-                click Соломон call showInfo()
-                click Ровоам call showInfo()
-                click Авия call showInfo()
-                click Иехония call showInfo()
-                click Зоровавель call showInfo()
-                click Иосиф_Н call showInfo()
-
-                classDef important fill:#efdfbb,stroke:#8b4513,stroke-width:2px;
-                class Адам,Ной,Авраам,Давид,Соломон,Зоровавель,Иосиф_Н important;
-        </div>
-    </div>
-
-    <div class="zoom-controls">
-        <button onclick="zoomIn()">+</button>
-        <button onclick="zoomOut()">−</button>
-        <button class="btn-reset" onclick="resetZoom()">Центр</button>
+            %% Стилизация ключевых узлов
+            classDef important fill:#efdfbb,stroke:#8b4513,stroke-width:2px;
+            class Адам,Ной,Авраам,Давид,Соломон,Зоровавель,Иосиф_Н important;
     </div>
 </div>
 
@@ -119,15 +109,15 @@
     const familyData = {
         "Адам": { name: "Адам", mother: "Сотворен Богом", desc: "Первый человек." },
         "Каин": { name: "Каин", mother: "Ева", desc: "Первенец Адама." },
-        "Явал": { name: "Явал", mother: "Ада", desc: "Отец живущих в шатрах." },
-        "Тувал-Каин": { name: "Тувал-Каин", mother: "Цилла", desc: "Ковач меди и железа." },
+        "Явал": { name: "Явал", mother: "Ада", desc: "Сын Ламеха. Основатель кочевого скотоводства." },
+        "Тувал-Каин": { name: "Тувал-Каин", mother: "Цилла", desc: "Первый мастер кузнечного дела." },
         "Наама": { name: "Наама", mother: "Цилла", desc: "Дочь Ламеха, сестра Тувал-Каина." },
-        "Соломон": { name: "Соломон", mother: "Вирсавия", desc: "Сын Давида, строитель Храма." },
-        "Ровоам": { name: "Ровоам", mother: "Наама (Аммонитянка)", desc: "При нем царство разделилось." },
+        "Соломон": { name: "Соломон", mother: "Вирсавия", desc: "Царь, построивший Иерусалимский Храм." },
+        "Ровоам": { name: "Ровоам", mother: "Наама (Аммонитянка)", desc: "Сын Соломона. При нем царство разделилось." },
         "Авия": { name: "Авия", mother: "Мааха (дочь Авессалома)", desc: "Царь Иудеи." },
-        "Иехония": { name: "Иехония", mother: "Нехушта", desc: "Уведен в Вавилонский плен." },
-        "Зоровавель": { name: "Зоровавель", mother: "Линия Салафиила/Педаи", desc: "Восстановитель Храма." },
-        "Иосиф_Н": { name: "Иосиф", mother: "Линия Иакова", desc: "Обручник Марии." }
+        "Иехония": { name: "Иехония", mother: "Нехушта (дочь Элнафана)", desc: "Царь, уведенный в Вавилон." },
+        "Зоровавель": { name: "Зоровавель", mother: "Линия Давида", desc: "Возвратил народ из плена и восстановил Храм." },
+        "Иосиф_Н": { name: "Иосиф", mother: "Линия Иакова", desc: "Обручник Девы Марии." }
     };
 
     mermaid.initialize({ startOnLoad: true, theme: 'base', securityLevel: 'loose' });
@@ -147,30 +137,26 @@
         document.getElementById('overlay').style.display = 'none';
     }
 
-    // Инициализация масштаба
-    function initPanZoom() {
+    // Инициализация навигации без кнопок
+    function initTree() {
         const svg = document.querySelector('#tree-viewer svg');
         if (svg) {
             svg.setAttribute('width', '100%');
             svg.setAttribute('height', '100%');
             window.pz = svgPanZoom(svg, {
                 zoomEnabled: true,
-                controlIconsEnabled: false,
+                controlIconsEnabled: false, // КНОПКИ УБРАНЫ
                 center: true,
                 minZoom: 0.001,
                 maxZoom: 50,
-                mouseWheelZoomEnabled: true
+                dblClickZoomEnabled: true // Двойной клик для сброса
             });
         } else {
-            setTimeout(initPanZoom, 200);
+            setTimeout(initTree, 200);
         }
     }
 
-    window.onload = initPanZoom;
-
-    function zoomIn() { if(window.pz) window.pz.zoomIn(); }
-    function zoomOut() { if(window.pz) window.pz.zoomOut(); }
-    function resetZoom() { if(window.pz) { window.pz.reset(); window.pz.center(); } }
+    window.onload = initTree;
 </script>
 </body>
 </html>
