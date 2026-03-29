@@ -3,87 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Редактор Родословия 3.0</title>
+    <title>Архив Родословия</title>
     
     <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js"></script>
     
     <style>
-        body { 
-            margin: 0; background-color: #3e2723; 
-            font-family: 'Segoe UI', serif;
-            overflow: hidden;
-        }
+        body { margin: 0; background-color: #3e2723; font-family: 'Times New Roman', serif; overflow: hidden; }
+        #scroll-wrapper { width: 95vw; height: 92vh; margin: 4vh auto; background: #fdf5e6; border: 12px solid #5d4037; position: relative; overflow: hidden; }
+        
+        .header { position: absolute; top: 0; left: 0; right: 0; padding: 15px; text-align: center; background: rgba(253, 245, 230, 0.8); z-index: 5; pointer-events: none; border-bottom: 1px solid #5d4037; }
+        .header * { pointer-events: auto; }
 
-        #scroll-wrapper {
-            width: 95vw; height: 92vh; margin: 4vh auto; 
-            background: #fdf5e6; border: 12px solid #5d4037;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.6);
-            position: relative; 
-            overflow: hidden; /* Важно: холст не должен выходить за границы */
-        }
+        #tree-container { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
 
-        /* Заголовок теперь парит над схемой */
-        .header { 
-            position: absolute; top: 0; left: 0; right: 0;
-            padding: 15px; text-align: center; 
-            background: rgba(253, 245, 230, 0.8);
-            border-bottom: 1px solid rgba(93, 64, 55, 0.2);
-            z-index: 5; pointer-events: none; /* Пропускает клики сквозь себя к схеме */
-        }
-        .header h2, .header small { pointer-events: auto; }
-
-        /* Холст занимает 100% пространства свитка */
-        #tree-container { 
-            width: 100%; height: 100%; 
-            position: absolute; top: 0; left: 0;
-            cursor: grab;
-        }
-
-        #context-menu {
-            display: none; position: fixed; background: #fff;
-            border: 2px solid #5d4037; box-shadow: 4px 4px 15px rgba(0,0,0,0.4);
-            z-index: 9999; min-width: 180px;
-        }
-        #context-menu div {
-            padding: 12px 15px; cursor: pointer; border-bottom: 1px solid #eee;
-        }
+        /* КОНТЕКСТНОЕ МЕНЮ */
+        #context-menu { display: none; position: fixed; background: #fff; border: 2px solid #5d4037; box-shadow: 4px 4px 15px rgba(0,0,0,0.4); z-index: 9999; min-width: 200px; }
+        #context-menu div { padding: 10px 15px; cursor: pointer; border-bottom: 1px solid #eee; font-size: 14px; }
         #context-menu div:hover { background: #f0e6d2; }
 
-        .controls { position: absolute; bottom: 20px; right: 20px; z-index: 10; display: flex; gap: 10px; }
-        button { 
-            background: #5d4037; color: white; border: none; 
-            padding: 10px 15px; cursor: pointer; border-radius: 4px;
-        }
+        /* МОДАЛЬНОЕ ОКНО ИНФОРМАЦИИ */
+        #info-modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 350px; background: #fffcf5; border: 5px double #5d4037; padding: 25px; z-index: 10000; box-shadow: 0 0 50px rgba(0,0,0,0.5); text-align: center; }
+        #modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9998; }
 
-        /* Фикс для SVG Mermaid */
-        svg {
-            display: block;
-            width: 100% !important;
-            height: 100% !important;
-            max-width: none !important;
-        }
+        .controls { position: absolute; bottom: 20px; right: 20px; z-index: 10; display: flex; gap: 10px; }
+        button { background: #5d4037; color: white; border: none; padding: 10px 15px; cursor: pointer; border-radius: 4px; }
+
+        /* СТИЛИ ГРАФА */
+        .infoNode rect { fill: #fcf3cf !important; stroke: #b7950b !important; stroke-width: 4px !important; stroke-dasharray: none; }
+        svg { width: 100% !important; height: 100% !important; max-width: none !important; }
     </style>
 </head>
 <body>
 
+<div id="modal-overlay" onclick="closeInfo()"></div>
+<div id="info-modal">
+    <h2 id="modal-title" style="margin-top:0;">Имя</h2>
+    <hr style="border: 1px double #5d4037;">
+    <p id="modal-desc" style="font-style: italic;">Описание отсутствует</p>
+    <button onclick="closeInfo()" style="margin-top:15px; width: 100%;">Закрыть</button>
+</div>
+
 <div id="context-menu">
     <div onclick="menuAction('edit')">✏️ Изменить имя</div>
+    <div onclick="menuAction('info')" id="menu-info-btn">📝 Добавить информацию</div>
     <div onclick="menuAction('add')">➕ Добавить потомка</div>
     <div onclick="menuAction('delete')" style="color: #d32f2f;">❌ Удалить узел</div>
 </div>
 
 <div id="scroll-wrapper">
     <div class="header">
-        <h2 style="margin:0;">ДРЕВО РОДОСЛОВИЯ</h2>
-        <small>ПКМ на имя — редактировать. Колесико — масштаб.</small>
+        <h2 style="margin:0;">КНИГА РОДОСЛОВИЯ</h2>
+        <small>ЛКМ — инфо, ПКМ — меню разработчика</small>
     </div>
-    
     <div id="tree-container"></div>
-
     <div class="controls">
         <button onclick="resetView()">Центрировать</button>
-        <button onclick="exportCode()" style="background: #2e7d32;">В консоль</button>
+        <button onclick="exportJSON()" style="background: #2e7d32;">Сохранить в консоль</button>
     </div>
 </div>
 
@@ -91,108 +67,129 @@
     let selectedNodeId = null;
     let currentGraphDefinition = `graph TD
     Adam[Адам] --> Seth[Сиф]
-    Seth --> Enos[Енос]
-    Adam --> Cain[Каин]`;
+    Seth --> Enos[Енос]`;
+    
+    // Хранилище описаний персонажей
+    let nodesData = {
+        "Adam": "Первый человек, сотворенный Богом. Прожил 930 лет."
+    };
 
-    mermaid.initialize({ 
-        startOnLoad: false, 
-        securityLevel: 'loose', 
-        theme: 'neutral'
-    });
+    mermaid.initialize({ startOnLoad: false, securityLevel: 'loose', theme: 'neutral' });
 
     async function renderGraph() {
         const container = document.getElementById('tree-container');
-        
-        if (window.panZoom) {
-            window.panZoom.destroy();
-            window.panZoom = null;
-        }
+        if (window.panZoom) window.panZoom.destroy();
 
-        // Очищаем и создаем новый div для рендера
-        container.innerHTML = `<div id="temp-mermaid-holder">${currentGraphDefinition}</div>`;
+        // Формируем стили для узлов, у которых есть информация
+        let styleInjections = "";
+        Object.keys(nodesData).forEach(id => {
+            styleInjections += `\n    class ${id} infoNode`;
+        });
+
+        const fullDefinition = currentGraphDefinition + styleInjections;
 
         try {
-            const { svg } = await mermaid.render('mermaid-svg-' + Date.now(), currentGraphDefinition);
+            const { svg } = await mermaid.render('mermaid-svg-' + Date.now(), fullDefinition);
             container.innerHTML = svg;
-            
             setTimeout(initPanZoom, 50);
-        } catch (err) {
-            console.error("Ошибка Mermaid:", err);
-        }
+        } catch (err) { console.error(err); }
     }
 
     function initPanZoom() {
-        const svgElement = document.querySelector('#tree-container svg');
-        if (svgElement) {
-            window.panZoom = svgPanZoom(svgElement, {
-                zoomEnabled: true,
-                controlIconsEnabled: true,
-                fit: true,
-                center: true,
-                minZoom: 0.01,
-                maxZoom: 50
-            });
+        const svg = document.querySelector('#tree-container svg');
+        if (svg) {
+            window.panZoom = svgPanZoom(svg, { zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true });
         }
     }
 
-    // Слушатель правой кнопки мыши
-    window.addEventListener('contextmenu', function(e) {
+    // ЛОГИКА КЛИКОВ
+    window.addEventListener('mousedown', function(e) {
         const node = e.target.closest('.node');
-        if (node) {
-            e.preventDefault();
-            // Находим ID в атрибутах или тексте
-            selectedNodeId = node.getAttribute('id').split('-')[1]; 
+        if (!node) return;
 
+        selectedNodeId = node.getAttribute('id').split('-')[1];
+
+        // Правая кнопка мыши (ПКМ)
+        if (e.button === 2) {
+            e.preventDefault();
+            const infoBtn = document.getElementById('menu-info-btn');
+            infoBtn.innerText = nodesData[selectedNodeId] ? "📝 Редактировать инфо" : "📝 Добавить информацию";
+            
             const menu = document.getElementById('context-menu');
             menu.style.display = 'block';
             menu.style.left = e.pageX + 'px';
             menu.style.top = e.pageY + 'px';
-        } else {
-            document.getElementById('context-menu').style.display = 'none';
+        } 
+        // Левая кнопка мыши (ЛКМ)
+        else if (e.button === 0) {
+            if (nodesData[selectedNodeId]) {
+                showInfo(selectedNodeId);
+            }
         }
     });
 
-    window.addEventListener('click', () => {
-        document.getElementById('context-menu').style.display = 'none';
-    });
+    // Блокируем стандартное меню браузера
+    window.oncontextmenu = (e) => { if(e.target.closest('.node')) return false; };
+
+    function showInfo(id) {
+        const nameNode = document.querySelector(`#flowchart-${id}-` + " .nodeLabel") || {innerText: id};
+        document.getElementById('modal-title').innerText = nameNode.innerText || id;
+        document.getElementById('modal-desc').innerText = nodesData[id];
+        document.getElementById('info-modal').style.display = 'block';
+        document.getElementById('modal-overlay').style.display = 'block';
+    }
+
+    function closeInfo() {
+        document.getElementById('info-modal').style.display = 'none';
+        document.getElementById('modal-overlay').style.display = 'none';
+    }
 
     function menuAction(type) {
         if (!selectedNodeId) return;
 
-        if (type === 'edit') {
+        if (type === 'info') {
+            const currentInfo = nodesData[selectedNodeId] || "";
+            const newInfo = prompt("Введите информацию о персонаже:", currentInfo);
+            if (newInfo !== null) {
+                if (newInfo.trim() === "") delete nodesData[selectedNodeId];
+                else nodesData[selectedNodeId] = newInfo;
+            }
+        } 
+        else if (type === 'edit') {
             const newName = prompt("Новое имя:");
             if (newName) {
                 const regex = new RegExp(`${selectedNodeId}\\[.*?\\]`, 'g');
                 currentGraphDefinition = currentGraphDefinition.replace(regex, `${selectedNodeId}[${newName}]`);
             }
-        } 
+        }
         else if (type === 'add') {
             const childName = prompt("Имя потомка:");
             if (childName) {
                 const childId = "id" + Math.random().toString(36).substr(2, 5);
                 currentGraphDefinition += `\n    ${selectedNodeId} --> ${childId}[${childName}]`;
             }
-        } 
+        }
         else if (type === 'delete') {
             if (confirm("Удалить?")) {
                 const lines = currentGraphDefinition.split('\n');
                 currentGraphDefinition = lines.filter(line => !line.includes(selectedNodeId)).join('\n');
+                delete nodesData[selectedNodeId];
             }
         }
+        document.getElementById('context-menu').style.display = 'none';
         renderGraph();
     }
 
-    function resetView() {
-        if (window.panZoom) {
-            window.panZoom.reset();
-            window.panZoom.fit();
-            window.panZoom.center();
-        }
-    }
+    window.addEventListener('click', (e) => {
+        if (!e.target.closest('#context-menu')) document.getElementById('context-menu').style.display = 'none';
+    });
 
-    function exportCode() {
-        console.log(currentGraphDefinition);
-        alert("Код в консоли (F12)");
+    function resetView() { if (window.panZoom) { window.panZoom.reset(); window.panZoom.fit(); window.panZoom.center(); } }
+
+    function exportJSON() {
+        const data = { graph: currentGraphDefinition, info: nodesData };
+        console.log("ДАННЫЕ СОХРАНЕНИЯ:", JSON.stringify(data));
+        alert("Данные выгружены в консоль (F12). Сохраните эту строку, чтобы восстановить древо позже.");
     }
 
     window.onload = renderGraph;
