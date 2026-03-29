@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Архив Родословия 4.0</title>
+    <title>Архив Родословия 5.0</title>
     
     <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js"></script>
@@ -16,30 +16,28 @@
             overflow: hidden; font-family: 'Times New Roman', serif;
         }
         
-        /* ПОИСКОВАЯ ПАНЕЛЬ */
+        /* Поиск теперь на флексе, чтобы не занимать лишнего места */
         #search-container {
             position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
-            z-index: 100; display: flex; gap: 5px;
+            z-index: 1000; display: flex; gap: 5px;
             background: rgba(253, 245, 230, 0.95);
-            padding: 10px; border: 2px solid #5d4037; border-radius: 8px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+            padding: 8px; border: 2px solid #5d4037; border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
         }
         #search-input {
-            border: 1px solid #5d4037; padding: 8px 12px; background: #fffcf5;
-            width: 250px; color: #3e2723; font-family: serif; font-size: 14px;
+            border: 1px solid #5d4037; padding: 6px 12px; background: #fffcf5;
+            width: 220px; color: #3e2723; font-family: serif;
         }
-        .search-btn { background: #5d4037; color: #fdf5e6; border: none; padding: 5px 20px; cursor: pointer; border-radius: 4px; font-weight: bold; }
-        .search-btn:hover { background: #795548; }
 
+        /* Главный контейнер - БЕЗ лишних фоновых слоев внутри */
         #tree-container { 
             width: 100vw; height: 100vh; 
             background-color: #fdf5e6;
             background-image: url('https://www.transparenttextures.com/patterns/paper-fibers.png');
-            box-shadow: inset 0 0 100px rgba(0,0,0,0.4);
-            cursor: grab; position: relative; z-index: 1;
+            position: relative; z-index: 1; overflow: hidden;
         }
 
-        /* МЕНЮ И МОДАЛКИ */
+        /* КОНТЕКСТНОЕ МЕНЮ */
         #context-menu { 
             display: none; position: fixed; background: #fffcf5; 
             border: 2px solid #5d4037; box-shadow: 5px 5px 15px rgba(0,0,0,0.5); 
@@ -48,57 +46,64 @@
         #context-menu div { padding: 10px 15px; cursor: pointer; border-bottom: 1px solid #d2b48c; color: #3e2723; }
         #context-menu div:hover { background: #e6ccb2; }
 
+        /* МОДАЛЬНОЕ ОКНО */
         #info-modal { 
             display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
             width: 320px; background: #fffcf5; border: 5px double #5d4037; padding: 25px; 
-            z-index: 10000; box-shadow: 0 0 60px rgba(0,0,0,0.8); text-align: center;
+            z-index: 10001; box-shadow: 0 0 60px rgba(0,0,0,0.8); text-align: center;
         }
-        #modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 9998; }
+        #modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 10000; }
 
-        /* ЭФФЕКТЫ */
+        /* СТИЛИ ГРАФА - ВАЖНО */
         .infoNode rect { fill: #fcf3cf !important; stroke: #b7950b !important; stroke-width: 3px !important; }
-        .highlight rect { fill: #ff9800 !important; stroke: #e65100 !important; stroke-width: 5px !important; transition: all 0.3s; }
-        svg { background: transparent !important; display: block; }
+        .highlight rect { fill: #ff9800 !important; stroke: #e65100 !important; stroke-width: 5px !important; }
+        
+        /* Убираем все возможные перекрытия от Mermaid */
+        .mermaid, .mermaid svg { background: transparent !important; max-width: none !important; }
+        foreignObject { overflow: visible; }
     </style>
 </head>
 <body>
 
 <div id="search-container">
-    <input type="text" id="search-input" list="names-list" placeholder="Найти имя в древе..." onkeypress="if(event.key === 'Enter') findPerson()">
+    <input type="text" id="search-input" list="names-list" placeholder="Найти имя..." onkeypress="if(event.key === 'Enter') findPerson()">
     <datalist id="names-list"></datalist>
-    <button class="search-btn" onclick="findPerson()">Найти</button>
+    <button onclick="findPerson()" style="background:#5d4037; color:#fff; border:none; padding:5px 15px; cursor:pointer;">Найти</button>
 </div>
 
 <div id="modal-overlay" onclick="closeInfo()"></div>
 <div id="info-modal">
-    <h2 id="modal-title" style="margin:0; font-variant: small-caps; color: #5d4037;"></h2>
-    <hr style="border: 1px double #5d4037; margin: 12px 0;">
-    <p id="modal-desc" style="font-style: italic; white-space: pre-wrap; color: #3e2723; line-height: 1.5;"></p>
-    <button onclick="closeInfo()" style="margin-top:20px; width: 100%; background: #5d4037; color: #fdf5e6; border: none; padding: 10px; cursor: pointer;">Закрыть свиток</button>
+    <h2 id="modal-title" style="margin:0;"></h2>
+    <hr style="border:1px double #5d4037; margin:12px 0;">
+    <p id="modal-desc" style="white-space:pre-wrap;"></p>
+    <button onclick="closeInfo()" style="margin-top:20px; width:100%; background:#5d4037; color:#fff; border:none; padding:10px; cursor:pointer;">Закрыть</button>
 </div>
 
 <div id="context-menu">
     <div onclick="menuAction('edit')">✏️ Изменить имя</div>
     <div onclick="menuAction('info')" id="menu-info-btn">📜 Информация</div>
     <div onclick="menuAction('add')">➕ Добавить потомка</div>
-    <div onclick="menuAction('delete')" style="color: #a00;">❌ Удалить</div>
+    <div onclick="menuAction('delete')" style="color:#a00;">❌ Удалить</div>
 </div>
 
 <div id="tree-container"></div>
 
 <script>
     let selectedNodeId = null;
-    const defaultGraph = `graph TD\n    Adam[Адам] --> Seth[Сиф]\n    Adam --> Cain[Каин]`;
-    const defaultInfo = { "Adam": "Первый человек." };
-
-    let currentGraphDefinition = localStorage.getItem('genealogy_graph') || defaultGraph;
-    let nodesData = JSON.parse(localStorage.getItem('genealogy_info')) || defaultInfo;
+    let currentGraphDefinition = localStorage.getItem('genealogy_graph') || `graph TD\n    Adam[Адам] --> Seth[Сиф]`;
+    let nodesData = JSON.parse(localStorage.getItem('genealogy_info')) || { "Adam": "Первый человек." };
 
     mermaid.initialize({ startOnLoad: false, securityLevel: 'loose', theme: 'neutral' });
 
     async function renderGraph() {
         const container = document.getElementById('tree-container');
-        if (window.panZoom) { window.panZoom.destroy(); window.panZoom = null; }
+        
+        // 1. ПОЛНАЯ ОЧИСТКА перед рендером
+        if (window.panZoom) {
+            window.panZoom.destroy();
+            window.panZoom = null;
+        }
+        container.innerHTML = ''; // Удаляем всё содержимое
 
         localStorage.setItem('genealogy_graph', currentGraphDefinition);
         localStorage.setItem('genealogy_info', JSON.stringify(nodesData));
@@ -107,110 +112,72 @@
         Object.keys(nodesData).forEach(id => { styleInjections += `\n    class ${id} infoNode`; });
 
         try {
+            // 2. Генерация SVG во временную переменную
             const { svg } = await mermaid.render('mermaid-svg-' + Date.now(), currentGraphDefinition + styleInjections);
+            
+            // 3. Вставляем SVG и сразу фиксируем его
             container.innerHTML = svg;
+            const svgElement = container.querySelector('svg');
+            svgElement.style.width = '100%';
+            svgElement.style.height = '100%';
+            
             setTimeout(() => {
-                initPanZoom();
-                updateSearchList(); // Обновляем список имен в поиске
+                initPanZoom(svgElement);
+                updateSearchList();
             }, 50);
         } catch (err) { console.error(err); }
     }
 
-    function initPanZoom() {
-        const svg = document.querySelector('#tree-container svg');
-        if (svg) {
-            window.panZoom = svgPanZoom(svg, { 
-                zoomEnabled: true, controlIconsEnabled: false, 
-                fit: true, center: true, minZoom: 0.01, maxZoom: 50
-            });
-        }
+    function initPanZoom(svg) {
+        window.panZoom = svgPanZoom(svg, { 
+            zoomEnabled: true, controlIconsEnabled: false, 
+            fit: true, center: true, minZoom: 0.01, maxZoom: 50
+        });
     }
 
-    // ОБНОВЛЕНИЕ СПИСКА ИМЕН С УКАЗАНИЕМ РОДИТЕЛЯ
+    // Логика поиска с предками
     function updateSearchList() {
         const datalist = document.getElementById('names-list');
         datalist.innerHTML = "";
-        
-        // Регулярка для поиска связей: Parent --> Child[Имя]
-        const lines = currentGraphDefinition.split('\n');
-        const peopleMap = [];
-
-        // Сначала соберем все отображаемые имена для ID
         const nameMap = {};
         const nameRegex = /(\w+)\[(.*?)\]/g;
         let match;
-        while ((match = nameRegex.exec(currentGraphDefinition)) !== null) {
-            nameMap[match[1]] = match[2];
-        }
+        while ((match = nameRegex.exec(currentGraphDefinition)) !== null) { nameMap[match[1]] = match[2]; }
 
-        // Теперь ищем связи
-        const nodes = document.querySelectorAll('.node');
-        nodes.forEach(node => {
+        document.querySelectorAll('.node').forEach(node => {
             const id = node.getAttribute('id').split('-')[1];
             const name = node.querySelector('.nodeLabel').innerText;
-            
-            // Ищем родителя этого ID в коде Mermaid
             let parentName = "";
-            lines.forEach(line => {
+            currentGraphDefinition.split('\n').forEach(line => {
                 if (line.includes(`--> ${id}`)) {
-                    const parentIdMatch = line.match(/(\w+)\s*-->/);
-                    if (parentIdMatch && nameMap[parentIdMatch[1]]) {
-                        parentName = nameMap[parentIdMatch[1]];
-                    }
+                    const pMatch = line.match(/(\w+)\s*-->/);
+                    if (pMatch && nameMap[pMatch[1]]) parentName = nameMap[pMatch[1]];
                 }
             });
-
-            const option = document.createElement('option');
-            // Формат: Имя (потомок: Родитель)
-            option.value = parentName ? `${name} (потомок: ${parentName})` : name;
-            option.dataset.id = id; // Сохраняем чистый ID
-            datalist.appendChild(option);
+            const opt = document.createElement('option');
+            opt.value = parentName ? `${name} (потомок: ${parentName})` : name;
+            datalist.appendChild(opt);
         });
     }
 
-    // ПОИСК И ПЕРЕХОД
     function findPerson() {
-        const fullValue = document.getElementById('search-input').value;
-        const queryName = fullValue.split(' (')[0].toLowerCase().trim(); // Берем имя до скобок
-        
-        const nodes = document.querySelectorAll('.node');
-        let foundElement = null;
-
-        nodes.forEach(node => {
-            const label = node.querySelector('.nodeLabel').innerText.toLowerCase();
-            if (label === queryName) {
-                // Если имен несколько, проверяем подходит ли выбранный вариант из списка
-                if (fullValue.includes('потомок:')) {
-                   const parentPart = fullValue.match(/потомок:\s*(.*?)\)/)[1].toLowerCase();
-                   // Простая проверка: есть ли связь в тексте
-                   if (currentGraphDefinition.toLowerCase().includes(`--> ${node.getAttribute('id').split('-')[1]}`)) {
-                       foundElement = node;
-                   }
-                } else {
-                    foundElement = node;
-                }
+        const val = document.getElementById('search-input').value.split(' (')[0].toLowerCase().trim();
+        document.querySelectorAll('.node').forEach(node => {
+            if (node.querySelector('.nodeLabel').innerText.toLowerCase() === val) {
+                node.classList.add('highlight');
+                setTimeout(() => node.classList.remove('highlight'), 3000);
+                const b = node.getBBox();
+                const s = window.panZoom.getSizes();
+                window.panZoom.zoomAtPoint(1.2, {x: s.width/2, y: s.height/2});
+                window.panZoom.pan({
+                    x: (s.width/2) - ((b.x + b.width/2) * window.panZoom.getSizes().realZoom),
+                    y: (s.height/2) - ((b.y + b.height/2) * window.panZoom.getSizes().realZoom)
+                });
             }
         });
-
-        if (foundElement && window.panZoom) {
-            foundElement.classList.add('highlight');
-            setTimeout(() => foundElement.classList.remove('highlight'), 3000);
-
-            const bBox = foundElement.getBBox();
-            const svg = document.querySelector('#tree-container svg');
-            const sizes = window.panZoom.getSizes();
-            
-            // Центрируем камеру на узле
-            window.panZoom.zoomAtPoint(1.2, {x: sizes.width/2, y: sizes.height/2});
-            const realZoom = window.panZoom.getSizes().realZoom;
-            window.panZoom.pan({
-                x: (sizes.width / 2) - ((bBox.x + bBox.width/2) * realZoom),
-                y: (sizes.height / 2) - ((bBox.y + bBox.height/2) * realZoom)
-            });
-        }
     }
 
-    // КЛИКИ И МЕНЮ
+    // События мыши
     window.addEventListener('mousedown', function(e) {
         const node = e.target.closest('.node');
         if (!node) {
@@ -222,19 +189,18 @@
         if (e.button === 2) {
             e.preventDefault();
             document.getElementById('menu-info-btn').innerText = nodesData[selectedNodeId] ? "📜 Изменить инфо" : "📜 Добавить инфо";
-            const menu = document.getElementById('context-menu');
-            menu.style.display = 'block'; menu.style.left = e.pageX + 'px'; menu.style.top = e.pageY + 'px';
-        } 
-        else if (e.button === 0) {
-            if (nodesData[selectedNodeId]) showInfo(selectedNodeId);
+            const m = document.getElementById('context-menu');
+            m.style.display = 'block'; m.style.left = e.pageX + 'px'; m.style.top = e.pageY + 'px';
+        } else if (e.button === 0 && nodesData[selectedNodeId]) {
+            showInfo(selectedNodeId);
         }
     });
 
     window.oncontextmenu = (e) => { if(e.target.closest('.node')) return false; };
 
     function showInfo(id) {
-        const nodeEl = document.querySelector(`#flowchart-${id}-` + " .nodeLabel") || {innerText: id};
-        document.getElementById('modal-title').innerText = nodeEl.innerText;
+        const name = document.querySelector(`#flowchart-${id}-` + " .nodeLabel").innerText;
+        document.getElementById('modal-title').innerText = name;
         document.getElementById('modal-desc').innerText = nodesData[id];
         document.getElementById('info-modal').style.display = 'block';
         document.getElementById('modal-overlay').style.display = 'block';
@@ -248,32 +214,18 @@
     function menuAction(type) {
         if (!selectedNodeId) return;
         document.getElementById('context-menu').style.display = 'none';
-
         if (type === 'info') {
-            const val = prompt("Описание:", nodesData[selectedNodeId] || "");
-            if (val !== null) {
-                if (val.trim() === "") delete nodesData[selectedNodeId];
-                else nodesData[selectedNodeId] = val;
-            }
-        } 
-        else if (type === 'edit') {
-            const val = prompt("Новое имя:", "");
-            if (val) {
-                const regex = new RegExp(`${selectedNodeId}\\[.*?\\]`, 'g');
-                currentGraphDefinition = currentGraphDefinition.replace(regex, `${selectedNodeId}[${val}]`);
-            }
-        }
-        else if (type === 'add') {
-            const val = prompt("Потомок:");
-            if (val) {
-                const nid = "id" + Math.random().toString(36).substr(2, 5);
-                currentGraphDefinition += `\n    ${selectedNodeId} --> ${nid}[${val}]`;
-            }
-        }
-        else if (type === 'delete') {
-            if (confirm("Удалить персонажа?")) {
-                const lines = currentGraphDefinition.split('\n');
-                currentGraphDefinition = lines.filter(l => !l.includes(selectedNodeId)).join('\n');
+            const v = prompt("Описание:", nodesData[selectedNodeId] || "");
+            if (v !== null) nodesData[selectedNodeId] = v;
+        } else if (type === 'edit') {
+            const v = prompt("Новое имя:");
+            if (v) currentGraphDefinition = currentGraphDefinition.replace(new RegExp(`${selectedNodeId}\\[.*?\\]`, 'g'), `${selectedNodeId}[${v}]`);
+        } else if (type === 'add') {
+            const v = prompt("Имя потомка:");
+            if (v) currentGraphDefinition += `\n    ${selectedNodeId} --> ${"id"+Math.random().toString(36).substr(2,5)}[${v}]`;
+        } else if (type === 'delete') {
+            if (confirm("Удалить?")) {
+                currentGraphDefinition = currentGraphDefinition.split('\n').filter(l => !l.includes(selectedNodeId)).join('\n');
                 delete nodesData[selectedNodeId];
             }
         }
