@@ -3,17 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Архив Родословия</title>
+    <title>Архив Родословия (Автосохранение)</title>
     
     <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js"></script>
     
     <style>
         body { margin: 0; background-color: #3e2723; font-family: 'Times New Roman', serif; overflow: hidden; }
-        #scroll-wrapper { width: 95vw; height: 92vh; margin: 4vh auto; background: #fdf5e6; border: 12px solid #5d4037; position: relative; overflow: hidden; }
+        #scroll-wrapper { width: 100vw; height: 100vh; background: #fdf5e6; position: relative; overflow: hidden; }
         
-        .header { position: absolute; top: 0; left: 0; right: 0; padding: 15px; text-align: center; background: rgba(253, 245, 230, 0.8); z-index: 5; pointer-events: none; border-bottom: 1px solid #5d4037; }
-        .header * { pointer-events: auto; }
+        /* Компактный заголовок с управлением */
+        .header { 
+            position: absolute; top: 0; left: 0; right: 0; 
+            padding: 10px 20px; display: flex; justify-content: space-between; align-items: center;
+            background: rgba(253, 245, 230, 0.9); z-index: 100; 
+            border-bottom: 2px double #5d4037;
+        }
 
         #tree-container { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
 
@@ -22,16 +27,15 @@
         #context-menu div { padding: 10px 15px; cursor: pointer; border-bottom: 1px solid #eee; font-size: 14px; }
         #context-menu div:hover { background: #f0e6d2; }
 
-        /* МОДАЛЬНОЕ ОКНО ИНФОРМАЦИИ */
-        #info-modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 350px; background: #fffcf5; border: 5px double #5d4037; padding: 25px; z-index: 10000; box-shadow: 0 0 50px rgba(0,0,0,0.5); text-align: center; }
+        /* МОДАЛЬНОЕ ОКНО */
+        #info-modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 320px; background: #fffcf5; border: 5px double #5d4037; padding: 25px; z-index: 10000; box-shadow: 0 0 50px rgba(0,0,0,0.5); text-align: center; }
         #modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9998; }
 
-        .controls { position: absolute; bottom: 20px; right: 20px; z-index: 10; display: flex; gap: 10px; }
-        button { background: #5d4037; color: white; border: none; padding: 10px 15px; cursor: pointer; border-radius: 4px; }
-
+        .nav-btn { background: #5d4037; color: white; border: none; padding: 6px 12px; cursor: pointer; border-radius: 4px; font-size: 12px; margin-left: 5px; }
+        
         /* СТИЛИ ГРАФА */
-        .infoNode rect { fill: #fcf3cf !important; stroke: #b7950b !important; stroke-width: 4px !important; stroke-dasharray: none; }
-        svg { width: 100% !important; height: 100% !important; max-width: none !important; }
+        .infoNode rect { fill: #fcf3cf !important; stroke: #b7950b !important; stroke-width: 3px !important; }
+        svg { width: 100% !important; height: 100% !important; }
     </style>
 </head>
 <body>
@@ -40,8 +44,8 @@
 <div id="info-modal">
     <h2 id="modal-title" style="margin-top:0;">Имя</h2>
     <hr style="border: 1px double #5d4037;">
-    <p id="modal-desc" style="font-style: italic;">Описание отсутствует</p>
-    <button onclick="closeInfo()" style="margin-top:15px; width: 100%;">Закрыть</button>
+    <p id="modal-desc" style="font-style: italic; white-space: pre-wrap;">Описание отсутствует</p>
+    <button onclick="closeInfo()" style="margin-top:15px; width: 100%; background: #5d4037; color: white; border: none; padding: 8px; cursor: pointer;">Закрыть</button>
 </div>
 
 <div id="context-menu">
@@ -53,26 +57,32 @@
 
 <div id="scroll-wrapper">
     <div class="header">
-        <h2 style="margin:0;">КНИГА РОДОСЛОВИЯ</h2>
-        <small>ЛКМ — инфо, ПКМ — меню разработчика</small>
+        <div>
+            <h2 style="margin:0; font-size: 18px; display: inline-block;">КНИГА РОДОСЛОВИЯ</h2>
+            <span style="font-size: 12px; margin-left: 10px; color: #795548;">ЛКМ — инфо / ПКМ — меню</span>
+        </div>
+        <div>
+            <button class="nav-btn" onclick="resetView()">Центрировать</button>
+            <button class="nav-btn" onclick="clearAllData()" style="background: #a00;">Очистить всё</button>
+        </div>
     </div>
+    
     <div id="tree-container"></div>
-    <div class="controls">
-        <button onclick="resetView()">Центрировать</button>
-        <button onclick="exportJSON()" style="background: #2e7d32;">Сохранить в консоль</button>
-    </div>
 </div>
 
 <script>
     let selectedNodeId = null;
-    let currentGraphDefinition = `graph TD
+    
+    // Начальные данные (если в памяти ничего нет)
+    const defaultGraph = `graph TD
     Adam[Адам] --> Seth[Сиф]
     Seth --> Enos[Енос]`;
     
-    // Хранилище описаний персонажей
-    let nodesData = {
-        "Adam": "Первый человек, сотворенный Богом. Прожил 930 лет."
-    };
+    const defaultInfo = { "Adam": "Первый человек." };
+
+    // Загрузка данных из localStorage
+    let currentGraphDefinition = localStorage.getItem('genealogy_graph') || defaultGraph;
+    let nodesData = JSON.parse(localStorage.getItem('genealogy_info')) || defaultInfo;
 
     mermaid.initialize({ startOnLoad: false, securityLevel: 'loose', theme: 'neutral' });
 
@@ -80,7 +90,11 @@
         const container = document.getElementById('tree-container');
         if (window.panZoom) window.panZoom.destroy();
 
-        // Формируем стили для узлов, у которых есть информация
+        // Сохраняем текущее состояние в память
+        localStorage.setItem('genealogy_graph', currentGraphDefinition);
+        localStorage.setItem('genealogy_info', JSON.stringify(nodesData));
+
+        // Стилизация узлов с информацией
         let styleInjections = "";
         Object.keys(nodesData).forEach(id => {
             styleInjections += `\n    class ${id} infoNode`;
@@ -98,19 +112,26 @@
     function initPanZoom() {
         const svg = document.querySelector('#tree-container svg');
         if (svg) {
-            window.panZoom = svgPanZoom(svg, { zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true });
+            window.panZoom = svgPanZoom(svg, { 
+                zoomEnabled: true, 
+                controlIconsEnabled: false, 
+                fit: true, 
+                center: true,
+                minZoom: 0.05
+            });
         }
     }
 
-    // ЛОГИКА КЛИКОВ
+    // Обработка кликов (ЛКМ и ПКМ)
     window.addEventListener('mousedown', function(e) {
         const node = e.target.closest('.node');
         if (!node) return;
 
-        selectedNodeId = node.getAttribute('id').split('-')[1];
+        // Извлекаем ID (формат flowchart-ID-индекс)
+        const parts = node.getAttribute('id').split('-');
+        selectedNodeId = parts[1];
 
-        // Правая кнопка мыши (ПКМ)
-        if (e.button === 2) {
+        if (e.button === 2) { // ПКМ
             e.preventDefault();
             const infoBtn = document.getElementById('menu-info-btn');
             infoBtn.innerText = nodesData[selectedNodeId] ? "📝 Редактировать инфо" : "📝 Добавить информацию";
@@ -120,20 +141,16 @@
             menu.style.left = e.pageX + 'px';
             menu.style.top = e.pageY + 'px';
         } 
-        // Левая кнопка мыши (ЛКМ)
-        else if (e.button === 0) {
-            if (nodesData[selectedNodeId]) {
-                showInfo(selectedNodeId);
-            }
+        else if (e.button === 0) { // ЛКМ
+            if (nodesData[selectedNodeId]) showInfo(selectedNodeId);
         }
     });
 
-    // Блокируем стандартное меню браузера
     window.oncontextmenu = (e) => { if(e.target.closest('.node')) return false; };
 
     function showInfo(id) {
-        const nameNode = document.querySelector(`#flowchart-${id}-` + " .nodeLabel") || {innerText: id};
-        document.getElementById('modal-title').innerText = nameNode.innerText || id;
+        const nodeEl = document.querySelector(`#flowchart-${id}-` + " .nodeLabel") || {innerText: id};
+        document.getElementById('modal-title').innerText = nodeEl.innerText || id;
         document.getElementById('modal-desc').innerText = nodesData[id];
         document.getElementById('info-modal').style.display = 'block';
         document.getElementById('modal-overlay').style.display = 'block';
@@ -148,15 +165,14 @@
         if (!selectedNodeId) return;
 
         if (type === 'info') {
-            const currentInfo = nodesData[selectedNodeId] || "";
-            const newInfo = prompt("Введите информацию о персонаже:", currentInfo);
+            const newInfo = prompt("Информация о персонаже:", nodesData[selectedNodeId] || "");
             if (newInfo !== null) {
                 if (newInfo.trim() === "") delete nodesData[selectedNodeId];
                 else nodesData[selectedNodeId] = newInfo;
             }
         } 
         else if (type === 'edit') {
-            const newName = prompt("Новое имя:");
+            const newName = prompt("Изменить имя:", "");
             if (newName) {
                 const regex = new RegExp(`${selectedNodeId}\\[.*?\\]`, 'g');
                 currentGraphDefinition = currentGraphDefinition.replace(regex, `${selectedNodeId}[${newName}]`);
@@ -170,7 +186,7 @@
             }
         }
         else if (type === 'delete') {
-            if (confirm("Удалить?")) {
+            if (confirm("Удалить этот узел?")) {
                 const lines = currentGraphDefinition.split('\n');
                 currentGraphDefinition = lines.filter(line => !line.includes(selectedNodeId)).join('\n');
                 delete nodesData[selectedNodeId];
@@ -180,17 +196,18 @@
         renderGraph();
     }
 
+    function clearAllData() {
+        if (confirm("Вы уверены, что хотите полностью очистить древо?")) {
+            localStorage.clear();
+            location.reload();
+        }
+    }
+
     window.addEventListener('click', (e) => {
         if (!e.target.closest('#context-menu')) document.getElementById('context-menu').style.display = 'none';
     });
 
     function resetView() { if (window.panZoom) { window.panZoom.reset(); window.panZoom.fit(); window.panZoom.center(); } }
-
-    function exportJSON() {
-        const data = { graph: currentGraphDefinition, info: nodesData };
-        console.log("ДАННЫЕ СОХРАНЕНИЯ:", JSON.stringify(data));
-        alert("Данные выгружены в консоль (F12). Сохраните эту строку, чтобы восстановить древо позже.");
-    }
 
     window.onload = renderGraph;
 </script>
