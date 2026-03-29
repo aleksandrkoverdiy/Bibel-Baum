@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Архив Родословия 8.0 (Zero Background)</title>
+    <title>Архив Родословия 9.0 (Full Interactive)</title>
     
     <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js"></script>
@@ -18,17 +18,16 @@
             position: absolute; top: 15px; left: 15px; z-index: 1000;
             display: flex; gap: 5px; background: rgba(253, 245, 230, 0.9);
             padding: 8px; border: 2px solid #5d4037; border-radius: 6px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
         }
-        #search-input { border: 1px solid #5d4037; padding: 6px; width: 180px; font-size: 14px; background: #fff; }
+        #search-input { border: 1px solid #5d4037; padding: 6px; width: 180px; font-size: 14px; }
 
         #tree-container { 
             width: 100vw; height: 100vh; 
             background: #fdf5e6 url('https://www.transparenttextures.com/patterns/paper-fibers.png');
-            position: relative; z-index: 1; overflow: hidden;
+            position: relative; z-index: 1;
         }
 
-        #mermaid-output { width: 100%; height: 100%; pointer-events: all; }
+        #mermaid-output { width: 100%; height: 100%; }
 
         /* МЕНЮ И МОДАЛКИ */
         #context-menu { 
@@ -41,17 +40,20 @@
         #info-modal { 
             display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
             width: 300px; background: #fffcf5; border: 5px double #5d4037; padding: 25px; 
-            z-index: 10001; text-align: center; box-shadow: 0 0 50px rgba(0,0,0,0.5);
+            z-index: 10001; text-align: center;
         }
         #modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; }
 
         /* СТИЛИ ГРАФА */
-        svg { background: none !important; }
+        .node { cursor: pointer !important; }
+        .node rect, .node circle, .node ellipse, .node polygon { pointer-events: all !important; }
+        
         .infoNode rect { fill: #fcf3cf !important; stroke: #b7950b !important; stroke-width: 3px !important; }
         .highlight rect { fill: #ff9800 !important; stroke: #e65100 !important; stroke-width: 4px !important; }
         
-        /* Критически важно: убираем реакцию фона на мышь */
-        .mermaid .root, .mermaid rect.outer { pointer-events: none !important; fill: none !important; }
+        /* Убираем фон самой Mermaid, но оставляем активными узлы */
+        svg { background: none !important; pointer-events: all !important; }
+        g.root > rect { display: none !important; } /* Скрываем главный фоновый прямоугольник */
     </style>
 </head>
 <body>
@@ -64,9 +66,9 @@
 
 <div id="modal-overlay" onclick="closeInfo()"></div>
 <div id="info-modal">
-    <h2 id="modal-title" style="margin:0; font-variant: small-caps;"></h2>
+    <h2 id="modal-title" style="margin:0; font-variant: small-caps; color:#5d4037;"></h2>
     <hr style="border: 1px double #5d4037; margin: 15px 0;">
-    <p id="modal-desc" style="white-space: pre-wrap; font-style: italic;"></p>
+    <p id="modal-desc" style="white-space: pre-wrap; font-style: italic; color:#3e2723;"></p>
     <button onclick="closeInfo()" style="margin-top:20px; width:100%; background:#5d4037; color:#fff; border:none; padding:10px; cursor:pointer;">Закрыть</button>
 </div>
 
@@ -86,12 +88,7 @@
     let currentGraphDefinition = localStorage.getItem('genealogy_graph') || `graph TD\n    Adam[Адам] --> Seth[Сиф]`;
     let nodesData = JSON.parse(localStorage.getItem('genealogy_info')) || { "Adam": "Первый человек." };
 
-    mermaid.initialize({ 
-        startOnLoad: false, 
-        securityLevel: 'loose', 
-        theme: 'neutral',
-        flowchart: { useMaxWidth: false, htmlLabels: true } 
-    });
+    mermaid.initialize({ startOnLoad: false, securityLevel: 'loose', theme: 'neutral' });
 
     async function renderGraph() {
         const out = document.getElementById('mermaid-output');
@@ -109,16 +106,14 @@
             out.innerHTML = svg;
             const svgEl = out.querySelector('svg');
             
-            // --- ГЛУБОКАЯ ОЧИСТКА ---
-            // Удаляем все фоновые прямоугольники, которые Mermaid сует назад
-            const backgrounds = svgEl.querySelectorAll('rect.mermaid-main-font, rect[style*="fill: white"], .node > rect[style*="opacity: 0"]');
-            backgrounds.forEach(bg => bg.remove());
+            // Чистим только специфические фоны, не трогая узлы
+            const bgRects = svgEl.querySelectorAll('rect[style*="fill: white"], .mermaid-main-font');
+            bgRects.forEach(bg => {
+                if (!bg.closest('.node')) bg.remove(); // Удаляем только если это не часть узла
+            });
 
-            // Исправляем viewBox, чтобы не было пустых полей снизу
             const bbox = svgEl.getBBox();
             svgEl.setAttribute('viewBox', `${bbox.x} ${bbox.y} ${bbox.width} ${bbox.height}`);
-            svgEl.style.width = "100%";
-            svgEl.style.height = "100%";
 
             setTimeout(() => {
                 window.panZoom = svgPanZoom(svgEl, { 
@@ -136,16 +131,20 @@
     function updateList() {
         const list = document.getElementById('names-list'); list.innerHTML = "";
         document.querySelectorAll('.node').forEach(n => {
-            const opt = document.createElement('option');
-            opt.value = n.querySelector('.nodeLabel').innerText;
-            list.appendChild(opt);
+            const label = n.querySelector('.nodeLabel');
+            if(label) {
+                const opt = document.createElement('option');
+                opt.value = label.innerText;
+                list.appendChild(opt);
+            }
         });
     }
 
     function findPerson() {
         const val = document.getElementById('search-input').value.toLowerCase().trim();
         document.querySelectorAll('.node').forEach(n => {
-            if (n.querySelector('.nodeLabel').innerText.toLowerCase() === val) {
+            const label = n.querySelector('.nodeLabel');
+            if (label && label.innerText.toLowerCase() === val) {
                 n.classList.add('highlight'); setTimeout(() => n.classList.remove('highlight'), 2500);
                 const b = n.getBBox(), s = window.panZoom.getSizes(), r = window.panZoom.getSizes().realZoom;
                 window.panZoom.pan({ 
@@ -156,22 +155,36 @@
         });
     }
 
+    // Обработка кликов
     window.addEventListener('mousedown', function(e) {
-        const n = e.target.closest('.node');
-        if (!n) { if (e.button === 0) document.getElementById('context-menu').style.display='none'; return; }
-        selectedNodeId = n.getAttribute('id').split('-')[1];
-        if (e.button === 2) {
+        const node = e.target.closest('.node');
+        
+        if (!node) {
+            if (e.button === 0) document.getElementById('context-menu').style.display='none';
+            return;
+        }
+
+        // Извлекаем ID корректно
+        const fullId = node.getAttribute('id');
+        selectedNodeId = fullId.split('-')[1];
+
+        if (e.button === 2) { // ПКМ
             e.preventDefault();
             const m = document.getElementById('context-menu');
+            document.getElementById('menu-info-btn').innerText = nodesData[selectedNodeId] ? "📜 Изменить инфо" : "📜 Добавить инфо";
             m.style.display='block'; m.style.left=e.pageX+'px'; m.style.top=e.pageY+'px';
-        } else if (e.button === 0 && nodesData[selectedNodeId]) showInfo(selectedNodeId);
+        } else if (e.button === 0) { // ЛКМ
+            if (nodesData[selectedNodeId]) {
+                showInfo(selectedNodeId);
+            }
+        }
     });
 
     window.oncontextmenu = (e) => { if(e.target.closest('.node')) return false; };
 
     function showInfo(id) {
-        const label = document.querySelector(`#flowchart-${id}- .nodeLabel`) || {innerText: id};
-        document.getElementById('modal-title').innerText = label.innerText;
+        const nodeEl = document.querySelector(`[id*="-${id}-"] .nodeLabel`);
+        document.getElementById('modal-title').innerText = nodeEl ? nodeEl.innerText : "Информация";
         document.getElementById('modal-desc').innerText = nodesData[id];
         document.getElementById('info-modal').style.display='block';
         document.getElementById('modal-overlay').style.display='block';
@@ -190,9 +203,12 @@
             if (v) currentGraphDefinition = currentGraphDefinition.replace(new RegExp(`${selectedNodeId}\\[.*?\\]`, 'g'), `${selectedNodeId}[${v}]`);
         } else if (t === 'add') {
             const v = prompt("Имя потомка:");
-            if (v) currentGraphDefinition += `\n    ${selectedNodeId} --> ${"id"+Math.random().toString(36).substr(2,5)}[${v}]`;
+            if (v) {
+                const nid = "id"+Math.random().toString(36).substr(2,5);
+                currentGraphDefinition += `\n    ${selectedNodeId} --> ${nid}[${v}]`;
+            }
         } else if (t === 'delete') {
-            if (confirm("Удалить?")) {
+            if (confirm("Удалить персонажа?")) {
                 currentGraphDefinition = currentGraphDefinition.split('\n').filter(l => !l.includes(selectedNodeId)).join('\n');
                 delete nodesData[selectedNodeId];
             }
