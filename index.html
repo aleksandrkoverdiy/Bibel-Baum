@@ -14,23 +14,17 @@
             background-image: url('https://www.transparenttextures.com/patterns/dark-wood.png');
             font-family: 'Georgia', serif; color: #3e2723; overflow: hidden;
         }
-
         #scroll-frame {
             width: 96vw; height: 92vh; margin: 4vh auto;
             background: #fdf5e6; border: 12px double #5d4037;
             box-shadow: inset 0 0 100px rgba(0,0,0,0.5), 0 10px 40px rgba(0,0,0,0.7);
             position: relative; display: flex; flex-direction: column;
         }
-
         .header {
             padding: 15px; text-align: center; border-bottom: 1px solid #d7ccc8;
             background: rgba(253, 245, 230, 0.9); z-index: 10;
         }
-
         #tree-viewer { flex-grow: 1; cursor: grab; overflow: hidden; }
-        #tree-viewer:active { cursor: grabbing; }
-
-        /* ИНФО-КАРТОЧКА */
         #overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 90; }
         #infobox {
             display: none; position: fixed; z-index: 100; left: 50%; top: 50%; transform: translate(-50%, -50%);
@@ -38,9 +32,8 @@
             box-shadow: 0 0 50px rgba(0,0,0,0.6); text-align: center;
         }
         .close-btn { margin-top: 15px; background: #5d4037; color: #fdf5e6; border: none; padding: 8px 20px; cursor: pointer; }
-
         .ui-btns { position: absolute; bottom: 20px; right: 20px; z-index: 10; }
-        button.ui { background: #5d4037; color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer; margin-left: 5px; }
+        button.ui { background: #5d4037; color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -49,87 +42,119 @@
 <div id="infobox">
     <h2 id="p-name" style="margin:0 0 10px; color:#5d4037;">Имя</h2>
     <div style="border-top:1px solid #5d4037; margin-bottom:10px;"></div>
-    <p><i id="p-desc">Описание отсутствует</i></p>
-    <p><small>Связи и примечания: <span id="p-note">-</span></small></p>
-    <button class="close-btn" onclick="closeInfo()">Вернуться к свитку</button>
+    <p><i id="p-desc">Описание</i></p>
+    <p><small>Источник: <span id="p-note">-</span></small></p>
+    <button class="close-btn" onclick="closeInfo()">Закрыть</button>
 </div>
 
 <div id="scroll-frame">
     <div class="header">
-        <h1 style="margin:0; letter-spacing: 3px;">КНИГА ПОКОЛЕНИЙ</h1>
-        <p style="margin:5px 0 0; font-style: italic;">Подробная хронология от Адама до потомков Зоровавеля</p>
+        <h1 style="margin:0;">КНИГА ПОКОЛЕНИЙ</h1>
+        <p style="margin:5px 0 0;">Полная библейская хронология</p>
     </div>
 
     <div id="tree-viewer">
         <div class="mermaid">
             graph TD
-                %% --- ДОПОТОПНЫЙ ПЕРИОД ---
+                %% 1. ДОПОТОПНЫЙ МИР
                 Adam[Адам] --> Cain[Каин]
                 Adam --> Abel[Авель]
                 Adam --> Seth[Сиф]
 
-                %% Линия Каина (с именами матерей)
                 Cain --> Enoch_C[Енох] --> Irad[Ирад] --> Mehujael[Мехиаэль] --> Methusael[Мафусал] --> Lamech_C[Ламех]
-                Lamech_C --> Jabal[Явал <br/>(Ада)]
-                Lamech_C --> Jubal[Ювал <br/>(Ада)]
-                Lamech_C --> Tubalcain[Тувал-Каин <br/>(Цилла)]
-                Lamech_C --> Naamah[Наама <br/>(Цилла)]
+                Lamech_C --> Jabal[Явал - сын Ады]
+                Lamech_C --> Jubal[Ювал - сын Ады]
+                Lamech_C --> Tubalcain[Тувал-Каин - сын Циллы]
+                Lamech_C --> Naamah[Наама - дочь Циллы]
 
-                %% Линия Сифа до Ноя
                 Seth --> Noah[Ной]
 
-                %% --- ТАБЛИЦА НАРОДОВ ---
+                %% 2. ТАБЛИЦА НАРОДОВ
                 Noah --> Shem[Сим]
                 Noah --> Ham[Хам]
                 Noah --> Japheth[Яфет]
 
-                %% Яфетиты
-                Japheth --> Gomer & Magog & Madai & Javan & Tubal & Meshech & Tiras
-                Gomer --> Ashkenaz & Riphath & Togarmah
-                Javan --> Elishah & Tarshish & Kittim & Dodanim
+                Japheth --> Gomer
+                Japheth --> Magog
+                Japheth --> Madai
+                Japheth --> Javan
+                Japheth --> Tubal
+                Japheth --> Meshech
+                Japheth --> Tiras
 
-                %% Хамиты
-                Ham --> Cush & Mizraim & Phut & Canaan
-                Cush --> Seba & Havilah & Sabtah & Raamah & Sabtechah & Nimrod[Нимрод]
-                Raamah --> Sheba & Dedan
-                Mizraim --> Ludim & Casluhim
+                Gomer --> Ashkenaz
+                Gomer --> Riphath
+                Gomer --> Togarmah
+
+                Javan --> Elishah
+                Javan --> Tarshish
+                Javan --> Kittim
+                Javan --> Dodanim
+
+                Ham --> Cush
+                Ham --> Mizraim
+                Ham --> Phut
+                Ham --> Canaan
+
+                Cush --> Seba
+                Cush --> Havilah
+                Cush --> Sabtah
+                Cush --> Raamah
+                Cush --> Sabtechah
+                Cush --> Nimrod[Нимрод]
+
+                Raamah --> Sheba
+                Raamah --> Dedan
+
+                Mizraim --> Ludim_group[Лудим и Ананим]
+                Mizraim --> Casluhim[Каслухим]
                 Casluhim --> Philistines[Филистимляне]
-                Canaan --> Sidon & Heth
 
-                %% --- ПАТРИАРХИ И 12 КОЛЕН ---
+                Canaan --> Sidon
+                Canaan --> Heth
+
+                %% 3. ПАТРИАРХИ
                 Shem --> Abraham[Авраам]
                 Abraham --> Isaac[Исаак] --> Jacob[Иаков]
                 Jacob --> Reuben & Simeon & Levi & Judah & Dan & Naphtali & Gad & Asher & Issachar & Zebulun & Joseph & Benjamin
 
-                %% --- ЛИНИЯ ЦАРЕЙ (С МАТЕРЯМИ) ---
-                Judah --> David[Царь Давид]
-                David --> Solomon[Соломон <br/>(Вирсавия)]
-                Solomon --> Rehoboam[Ровоам <br/>(Наама)]
-                Rehoboam --> Abia[Авия <br/>(Мааха)] --> Asa --> Josaphat --> Joram
+                %% 4. ЛИНИЯ ЦАРЕЙ
+                Judah --> Pharez --> Esrom --> Aram --> Aminadab --> Naasson --> Salmon --> Boaz --> Obed --> Jesse --> David[Царь Давид]
                 
-                %% Боковая ветвь Охозии
+                David --> Solomon[Соломон - сын Вирсавии]
+                Solomon --> Rehoboam[Ровоам - сын Наамы]
+                Rehoboam --> Abia[Авия - сын Маахи] --> Asa --> Josaphat --> Joram
+                
                 Joram --> Ahaziah[Охозия] --> Joash[Иоас] --> Amaziah[Амасия] --> Azariah[Азария]
+                Joram --> Uzziah[Уззия]
+                Uzziah --> Jotham --> Ahaz --> Hezekiah --> Manasseh --> Amon --> Josiah
                 
-                %% Основная ветвь к Плену
-                Joram --> Uzziah[Уззия] --> Jotham --> Ahaz --> Hezekiah --> Manasseh --> Amon --> Josiah
-                Josiah --> Jehoiakim & Zedekiah & Shallum
-                Jehoiakim --> Jeconiah[Иехония <br/>(Нехушта)]
+                Josiah --> Jehoiakim
+                Josiah --> Zedekiah
+                Josiah --> Shallum
+                
+                Jehoiakim --> Jeconiah[Иехония - сын Нехушты]
 
-                %% --- ПОСЛЕПЛЕННЫЙ ПЕРИОД ---
-                Jeconiah --> Shealtiel[Салафиил] & Pedaiah[Педая]
+                %% 5. ПОСЛЕПЛЕННЫЙ ПЕРИОД
+                Jeconiah --> Shealtiel[Салафиил]
+                Jeconiah --> Pedaiah[Педая]
+                
                 Shealtiel --> Zerubbabel[Зоровавель]
                 Pedaiah --> Zerubbabel
                 
-                Zerubbabel --> Meshullam & Hananiah & Shelomith
+                Zerubbabel --> Meshullam
+                Zerubbabel --> Hananiah
+                Zerubbabel --> Shelomith
                 
-                %% Линия потомков Ханании
-                Hananiah --> Pelatiah & Jeshaiah
-                Jeshaiah --> Rephaiah --> Arnan --> Obadiah --> Shechaniah
+                Hananiah --> Pelatiah
+                Hananiah --> Jeshaiah --> Rephaiah --> Arnan --> Obadiah --> Shechaniah
                 Shechaniah --> Shemaiah --> Neariah
-                Neariah --> Elioenai & Hezekiah_2 & Azrikam
-                Elioenai --> Hodaiah[Годавия, Эльяшив, Пелая, Аккуб, Йоханан, Делая, Анани]
+                Neariah --> Elioenai
+                Neariah --> Hezekiah_2[Хизкия]
+                Neariah --> Azrikam
+                
+                Elioenai --> Hodaiah[Потомки Элиоэная: Годавия и др.]
 
-                %% Линия к Иосифу (Матфей 1)
                 Zerubbabel --> Abiud --> Eliakim --> Azor --> Sadoc --> Achim --> Eliud --> Eleazar --> Matthan --> Jacob_N --> Joseph_N[Иосиф]
 
                 %% СТИЛИ
@@ -146,21 +171,19 @@
                 click Joseph_N call showInfo()
         </div>
     </div>
-
     <div class="ui-btns">
-        <button class="ui" onclick="resetV()">Сброс</button>
+        <button class="ui" onclick="resetV()">Сбросить вид</button>
     </div>
 </div>
 
 <script>
     const familyData = {
-        "Adam": { name: "Адам", desc: "Первый человек. От него ведут начало все роды.", note: "Бытие 2-5" },
-        "Noah": { name: "Ной", desc: "Праведник, переживший Потоп. Родоначальник нового человечества.", note: "Бытие 6-9" },
-        "Abraham": { name: "Авраам", desc: "Отец множества народов, заключивший завет с Богом.", note: "Бытие 12-25" },
-        "Nimrod": { name: "Нимрод", desc: "Сын Куша. Сильный зверолов и первый царь на земле.", note: "Основатель Вавилона" },
-        "David": { name: "Давид", desc: "Царь Израиля, от колена Иудина. Победитель Голиафа.", note: "Псалмопевец" },
-        "Zerubbabel": { name: "Зоровавель", desc: "Вождь иудеев при возвращении из плена. Восстановил Храм.", note: "Книга Ездры" },
-        "Joseph_N": { name: "Иосиф", desc: "Обручник Марии, потомок Давида по линии царей.", note: "Евангелие от Матфея" }
+        "Adam": { name: "Адам", desc: "Первый человек.", note: "Бытие" },
+        "Noah": { name: "Ной", desc: "Праведник.", note: "Бытие" },
+        "Abraham": { name: "Авраам", desc: "Отец народов.", note: "Бытие" },
+        "David": { name: "Давид", desc: "Царь Израиля.", note: "Царств" },
+        "Zerubbabel": { name: "Зоровавель", desc: "Вождь после плена.", note: "Ездра" },
+        "Joseph_N": { name: "Иосиф", desc: "Муж Марии.", note: "Матфея" }
     };
 
     mermaid.initialize({ startOnLoad: true, theme: 'base', securityLevel: 'loose', 
@@ -177,7 +200,6 @@
             document.getElementById('overlay').style.display = 'block';
         }
     }
-
     function closeInfo() {
         document.getElementById('infobox').style.display = 'none';
         document.getElementById('overlay').style.display = 'none';
@@ -187,7 +209,7 @@
         const svg = document.querySelector('#tree-viewer svg');
         if (svg) {
             svg.setAttribute('width', '100%'); svg.setAttribute('height', '100%');
-            window.pz = svgPanZoom(svg, { zoomEnabled: true, controlIconsEnabled: true, center: true, minZoom: 0.02 });
+            window.pz = svgPanZoom(svg, { zoomEnabled: true, controlIconsEnabled: true, center: true, minZoom: 0.01 });
             obs.disconnect();
         }
     });
@@ -195,6 +217,5 @@
 
     function resetV() { if(window.pz) { window.pz.reset(); window.pz.center(); } }
 </script>
-
 </body>
 </html>
