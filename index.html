@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Архив Родословия 7.0 (Final Fix)</title>
+    <title>Архив Родословия 8.0 (Zero Background)</title>
     
     <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js"></script>
@@ -14,68 +14,66 @@
             background-color: #3e2723; overflow: hidden; font-family: 'Times New Roman', serif;
         }
         
-        /* КОМПАКТНЫЙ ПОИСК */
         #search-container {
-            position: absolute; top: 10px; left: 10px; z-index: 1000;
+            position: absolute; top: 15px; left: 15px; z-index: 1000;
             display: flex; gap: 5px; background: rgba(253, 245, 230, 0.9);
-            padding: 5px; border: 1px solid #5d4037; border-radius: 4px;
+            padding: 8px; border: 2px solid #5d4037; border-radius: 6px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
         }
-        #search-input { border: 1px solid #5d4037; padding: 4px; width: 150px; font-size: 13px; }
+        #search-input { border: 1px solid #5d4037; padding: 6px; width: 180px; font-size: 14px; background: #fff; }
 
-        /* КОНТЕЙНЕР ПЕРГАМЕНТА */
         #tree-container { 
             width: 100vw; height: 100vh; 
             background: #fdf5e6 url('https://www.transparenttextures.com/patterns/paper-fibers.png');
             position: relative; z-index: 1; overflow: hidden;
         }
 
-        #mermaid-output { width: 100%; height: 100%; }
+        #mermaid-output { width: 100%; height: 100%; pointer-events: all; }
 
-        /* МЕНЮ И ОКНА */
+        /* МЕНЮ И МОДАЛКИ */
         #context-menu { 
             display: none; position: fixed; background: #fffcf5; border: 2px solid #5d4037; 
-            z-index: 9999; min-width: 150px; box-shadow: 5px 5px 15px rgba(0,0,0,0.3);
+            z-index: 9999; min-width: 160px; box-shadow: 5px 5px 15px rgba(0,0,0,0.3);
         }
-        #context-menu div { padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #d2b48c; font-size: 14px; }
+        #context-menu div { padding: 10px 15px; cursor: pointer; border-bottom: 1px solid #d2b48c; }
         #context-menu div:hover { background: #e6ccb2; }
 
         #info-modal { 
             display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-            width: 280px; background: #fffcf5; border: 4px double #5d4037; padding: 20px; 
-            z-index: 10001; text-align: center;
+            width: 300px; background: #fffcf5; border: 5px double #5d4037; padding: 25px; 
+            z-index: 10001; text-align: center; box-shadow: 0 0 50px rgba(0,0,0,0.5);
         }
         #modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; }
 
-        /* ФИКС SVG */
-        svg { 
-            background: transparent !important; 
-            display: block !important; 
-            max-height: 100% !important; 
-            max-width: 100% !important;
-        }
+        /* СТИЛИ ГРАФА */
+        svg { background: none !important; }
         .infoNode rect { fill: #fcf3cf !important; stroke: #b7950b !important; stroke-width: 3px !important; }
         .highlight rect { fill: #ff9800 !important; stroke: #e65100 !important; stroke-width: 4px !important; }
+        
+        /* Критически важно: убираем реакцию фона на мышь */
+        .mermaid .root, .mermaid rect.outer { pointer-events: none !important; fill: none !important; }
     </style>
 </head>
 <body>
 
 <div id="search-container">
-    <input type="text" id="search-input" list="names-list" placeholder="Поиск..." onkeypress="if(event.key === 'Enter') findPerson()">
+    <input type="text" id="search-input" list="names-list" placeholder="Найти имя..." onkeypress="if(event.key === 'Enter') findPerson()">
     <datalist id="names-list"></datalist>
-    <button onclick="findPerson()" style="cursor:pointer; background:#5d4037; color:#fff; border:none; padding:4px 8px;">🔍</button>
+    <button onclick="findPerson()" style="cursor:pointer; background:#5d4037; color:#fff; border:none; padding:6px 12px; border-radius:3px;">Найти</button>
 </div>
 
 <div id="modal-overlay" onclick="closeInfo()"></div>
 <div id="info-modal">
-    <h3 id="modal-title" style="margin:0;"></h3>
-    <p id="modal-desc" style="font-size:14px; margin:15px 0;"></p>
-    <button onclick="closeInfo()" style="padding:5px 15px; background:#5d4037; color:#fff; border:none; cursor:pointer;">Закрыть</button>
+    <h2 id="modal-title" style="margin:0; font-variant: small-caps;"></h2>
+    <hr style="border: 1px double #5d4037; margin: 15px 0;">
+    <p id="modal-desc" style="white-space: pre-wrap; font-style: italic;"></p>
+    <button onclick="closeInfo()" style="margin-top:20px; width:100%; background:#5d4037; color:#fff; border:none; padding:10px; cursor:pointer;">Закрыть</button>
 </div>
 
 <div id="context-menu">
-    <div onclick="menuAction('edit')">✏️ Имя</div>
-    <div onclick="menuAction('info')" id="menu-info-btn">📜 Инфо</div>
-    <div onclick="menuAction('add')">➕ Потомок</div>
+    <div onclick="menuAction('edit')">✏️ Изменить имя</div>
+    <div onclick="menuAction('info')" id="menu-info-btn">📜 Информация</div>
+    <div onclick="menuAction('add')">➕ Добавить потомка</div>
     <div onclick="menuAction('delete')" style="color:#a00;">❌ Удалить</div>
 </div>
 
@@ -88,7 +86,12 @@
     let currentGraphDefinition = localStorage.getItem('genealogy_graph') || `graph TD\n    Adam[Адам] --> Seth[Сиф]`;
     let nodesData = JSON.parse(localStorage.getItem('genealogy_info')) || { "Adam": "Первый человек." };
 
-    mermaid.initialize({ startOnLoad: false, securityLevel: 'loose', theme: 'neutral' });
+    mermaid.initialize({ 
+        startOnLoad: false, 
+        securityLevel: 'loose', 
+        theme: 'neutral',
+        flowchart: { useMaxWidth: false, htmlLabels: true } 
+    });
 
     async function renderGraph() {
         const out = document.getElementById('mermaid-output');
@@ -106,19 +109,25 @@
             out.innerHTML = svg;
             const svgEl = out.querySelector('svg');
             
-            // --- КЛЮЧЕВОЙ ФИКС: УДАЛЕНИЕ ПУСТОТ ---
-            svgEl.removeAttribute('height'); // Убираем фиксированную высоту
+            // --- ГЛУБОКАЯ ОЧИСТКА ---
+            // Удаляем все фоновые прямоугольники, которые Mermaid сует назад
+            const backgrounds = svgEl.querySelectorAll('rect.mermaid-main-font, rect[style*="fill: white"], .node > rect[style*="opacity: 0"]');
+            backgrounds.forEach(bg => bg.remove());
+
+            // Исправляем viewBox, чтобы не было пустых полей снизу
             const bbox = svgEl.getBBox();
-            // Пересчитываем viewBox только под размер элементов схемы
             svgEl.setAttribute('viewBox', `${bbox.x} ${bbox.y} ${bbox.width} ${bbox.height}`);
-            
-            // Очистка фонов
-            svgEl.querySelectorAll('rect').forEach(r => {
-                if (r.getAttribute('fill') === 'white') r.setAttribute('fill', 'transparent');
-            });
+            svgEl.style.width = "100%";
+            svgEl.style.height = "100%";
 
             setTimeout(() => {
-                window.panZoom = svgPanZoom(svgEl, { zoomEnabled: true, fit: true, center: true, minZoom: 0.01 });
+                window.panZoom = svgPanZoom(svgEl, { 
+                    zoomEnabled: true, 
+                    controlIconsEnabled: false, 
+                    fit: true, 
+                    center: true,
+                    minZoom: 0.001 
+                });
                 updateList();
             }, 50);
         } catch (err) { console.error(err); }
@@ -137,9 +146,12 @@
         const val = document.getElementById('search-input').value.toLowerCase().trim();
         document.querySelectorAll('.node').forEach(n => {
             if (n.querySelector('.nodeLabel').innerText.toLowerCase() === val) {
-                n.classList.add('highlight'); setTimeout(() => n.classList.remove('highlight'), 2000);
+                n.classList.add('highlight'); setTimeout(() => n.classList.remove('highlight'), 2500);
                 const b = n.getBBox(), s = window.panZoom.getSizes(), r = window.panZoom.getSizes().realZoom;
-                window.panZoom.pan({ x: (s.width/2) - ((b.x + b.width/2)*r), y: (s.height/2) - ((b.y + b.height/2)*r) });
+                window.panZoom.pan({ 
+                    x: (s.width/2) - ((b.x + b.width/2)*r), 
+                    y: (s.height/2) - ((b.y + b.height/2)*r) 
+                });
             }
         });
     }
@@ -158,7 +170,8 @@
     window.oncontextmenu = (e) => { if(e.target.closest('.node')) return false; };
 
     function showInfo(id) {
-        document.getElementById('modal-title').innerText = document.querySelector(`#flowchart-${id}- .nodeLabel`).innerText;
+        const label = document.querySelector(`#flowchart-${id}- .nodeLabel`) || {innerText: id};
+        document.getElementById('modal-title').innerText = label.innerText;
         document.getElementById('modal-desc').innerText = nodesData[id];
         document.getElementById('info-modal').style.display='block';
         document.getElementById('modal-overlay').style.display='block';
@@ -170,10 +183,10 @@
         if (!selectedNodeId) return;
         document.getElementById('context-menu').style.display='none';
         if (t === 'info') {
-            const v = prompt("Описание:", nodesData[selectedNodeId] || "");
+            const v = prompt("Информация:", nodesData[selectedNodeId] || "");
             if (v !== null) nodesData[selectedNodeId] = v;
         } else if (t === 'edit') {
-            const v = prompt("Имя:");
+            const v = prompt("Новое имя:");
             if (v) currentGraphDefinition = currentGraphDefinition.replace(new RegExp(`${selectedNodeId}\\[.*?\\]`, 'g'), `${selectedNodeId}[${v}]`);
         } else if (t === 'add') {
             const v = prompt("Имя потомка:");
