@@ -3,40 +3,62 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Редактор Родословия</title>
+    <title>Редактор Родословия 2.0</title>
     
     <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js"></script>
     
     <style>
         body { 
-            margin: 0; background-color: #3e2723; font-family: 'Times New Roman', serif;
+            margin: 0; background-color: #3e2723; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             color: #3e2723; overflow: hidden;
         }
 
         #scroll-wrapper {
-            width: 95vw; height: 90vh; margin: 5vh auto; background: #fdf5e6;
-            border: 15px solid #5d4037; position: relative; display: flex; flex-direction: column;
+            width: 95vw; height: 90vh; margin: 5vh auto; 
+            background: #fdf5e6; border: 12px solid #5d4037;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            position: relative; display: flex; flex-direction: column;
         }
 
-        #tree-container { flex-grow: 1; overflow: hidden; }
+        .header { 
+            padding: 15px; text-align: center; 
+            background: rgba(255,255,255,0.3);
+            border-bottom: 2px double #5d4037; 
+        }
+
+        #tree-container { 
+            flex-grow: 1; overflow: hidden; position: relative;
+            background-image: radial-gradient(circle, #f3e5ab 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
 
         /* КОНТЕКСТНОЕ МЕНЮ */
         #context-menu {
-            display: none; position: fixed; background: #fffcf5;
-            border: 2px solid #5d4037; box-shadow: 5px 5px 15px rgba(0,0,0,0.3);
-            z-index: 1000; min-width: 150px;
+            display: none; position: fixed; background: #fff;
+            border: 2px solid #5d4037; border-radius: 4px;
+            box-shadow: 4px 4px 15px rgba(0,0,0,0.4);
+            z-index: 9999; min-width: 180px;
         }
         #context-menu div {
-            padding: 10px 15px; cursor: pointer; border-bottom: 1px solid #eee;
+            padding: 12px 15px; cursor: pointer; border-bottom: 1px solid #eee;
             font-size: 14px; transition: background 0.2s;
         }
-        #context-menu div:hover { background: #e6ccb2; }
+        #context-menu div:hover { background: #f0e6d2; }
         #context-menu div:last-child { border-bottom: none; }
 
-        .header { padding: 10px; text-align: center; border-bottom: 2px double #5d4037; }
-        .controls { position: absolute; bottom: 20px; right: 20px; z-index: 10; }
-        button { background: #5d4037; color: white; border: none; padding: 8px; cursor: pointer; }
+        .controls { position: absolute; bottom: 20px; right: 20px; z-index: 10; display: flex; gap: 10px; }
+        button { 
+            background: #5d4037; color: white; border: none; 
+            padding: 10px 15px; cursor: pointer; border-radius: 4px;
+            font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+        button:hover { background: #795548; }
+
+        /* Стиль для Mermaid узлов */
+        .node rect, .node circle { stroke-width: 2px !important; }
+        .node:hover { cursor: context-menu; }
     </style>
 </head>
 <body>
@@ -44,55 +66,102 @@
 <div id="context-menu">
     <div onclick="menuAction('edit')">✏️ Изменить имя</div>
     <div onclick="menuAction('add')">➕ Добавить потомка</div>
-    <div onclick="menuAction('delete')" style="color: #a00;">❌ Удалить узел</div>
+    <div onclick="menuAction('delete')" style="color: #d32f2f;">❌ Удалить узел</div>
 </div>
 
 <div id="scroll-wrapper">
     <div class="header">
-        <h2 style="margin:0;">РЕДАКТОР РОДОСЛОВИЯ</h2>
-        <small>ПКМ на узле для меню разработчика</small>
+        <h2 style="margin:0; letter-spacing: 2px;">ДРЕВО РОДОСЛОВИЯ</h2>
+        <small>Нажмите <b>Правой Кнопкой Мыши</b> на имя для редактирования</small>
     </div>
+    
     <div id="tree-container">
-        <div class="mermaid" id="mainTree">
-            graph TD
-                Adam[Адам] --> Seth[Сиф]
-                Seth --> Enos[Енос]
         </div>
-    </div>
+
     <div class="controls">
-        <button onclick="exportCode()">Выгрузить код графа</button>
+        <button onclick="resetView()">Центрировать</button>
+        <button onclick="exportCode()" style="background: #2e7d32;">Код в консоль</button>
     </div>
 </div>
 
 <script>
     let selectedNodeId = null;
-    let currentGraphDefinition = `graph TD\n    Adam[Адам] --> Seth[Сиф]\n    Seth --> Enos[Енос]`;
+    // Начальное состояние графа
+    let currentGraphDefinition = `graph TD
+    Adam[Адам] --> Seth[Сиф]
+    Seth --> Enos[Енос]
+    Adam --> Cain[Каин]`;
 
-    mermaid.initialize({ startOnLoad: false, securityLevel: 'loose', theme: 'neutral' });
+    // Инициализация Mermaid
+    mermaid.initialize({ 
+        startOnLoad: false, 
+        securityLevel: 'loose', 
+        theme: 'base',
+        themeVariables: {
+            primaryColor: '#fffcf5',
+            lineColor: '#5d4037',
+            nodeBorder: '#5d4037',
+            fontFamily: 'Times New Roman'
+        }
+    });
 
-    // Отрисовка графа
+    // ГЛАВНАЯ ФУНКЦИЯ ОТРИСОВКИ
     async function renderGraph() {
         const container = document.getElementById('tree-container');
-        container.innerHTML = `<div class="mermaid" id="mainTree">${currentGraphDefinition}</div>`;
-        await mermaid.run();
-        setupPanZoom();
-    }
+        
+        // 1. Очистка старого зума
+        if (window.panZoom) {
+            window.panZoom.destroy();
+            window.panZoom = null;
+        }
 
-    function setupPanZoom() {
-        const svg = document.querySelector('#tree-container svg');
-        if (svg) {
-            svg.setAttribute('width', '100%');
-            svg.setAttribute('height', '100%');
-            svgPanZoom(svg, { zoomEnabled: true, controlIconsEnabled: true, center: true });
+        // 2. Очистка контейнера
+        container.innerHTML = `<div class="mermaid" id="mainTree">${currentGraphDefinition}</div>`;
+
+        try {
+            // 3. Рендер Mermaid
+            await mermaid.run({
+                nodes: [document.getElementById('mainTree')]
+            });
+
+            // 4. Инициализация зума после небольшой паузы
+            setTimeout(initPanZoom, 100);
+        } catch (err) {
+            console.error("Ошибка Mermaid:", err);
         }
     }
 
-    // Обработка правой кнопки мыши
+    function initPanZoom() {
+        const svg = document.querySelector('#tree-container svg');
+        if (svg) {
+            svg.style.width = '100%';
+            svg.style.height = '100%';
+            svg.style.maxWidth = '100%';
+
+            window.panZoom = svgPanZoom(svg, {
+                zoomEnabled: true,
+                controlIconsEnabled: true,
+                fit: true,
+                center: true,
+                minZoom: 0.05,
+                maxZoom: 20
+            });
+        }
+    }
+
+    // ЛОГИКА КОНТЕКСТНОГО МЕНЮ
     window.addEventListener('contextmenu', function(e) {
+        // Ищем, нажат ли узел (Mermaid помечает их классом .node)
         const node = e.target.closest('.node');
+        
         if (node) {
             e.preventDefault();
-            selectedNodeId = node.id.split('-')[1]; // Mermaid ID
+            // Извлекаем чистый ID из формата Mermaid (например, flowchart-Adam-45)
+            const fullId = node.id;
+            const parts = fullId.split('-');
+            // Обычно ID находится между префиксом и индексом
+            selectedNodeId = parts[1]; 
+
             const menu = document.getElementById('context-menu');
             menu.style.display = 'block';
             menu.style.left = e.pageX + 'px';
@@ -102,32 +171,35 @@
         }
     });
 
+    // Закрыть меню при обычном клике
     window.addEventListener('click', () => {
         document.getElementById('context-menu').style.display = 'none';
     });
 
-    // Действия меню
+    // ДЕЙСТВИЯ МЕНЮ
     function menuAction(type) {
         if (!selectedNodeId) return;
 
         if (type === 'edit') {
-            const newName = prompt("Введите новое имя:");
+            const newName = prompt("Введите новое имя для узла " + selectedNodeId + ":");
             if (newName) {
-                // Заменяем текст в определении (упрощенно)
+                // Регулярное выражение ищет ID[Текст]
                 const regex = new RegExp(`${selectedNodeId}\\[.*?\\]`, 'g');
                 currentGraphDefinition = currentGraphDefinition.replace(regex, `${selectedNodeId}[${newName}]`);
             }
         } 
         else if (type === 'add') {
-            const childId = "node_" + Math.random().toString(36).substr(2, 5);
-            const childName = prompt("Имя потомка:");
+            const childName = prompt("Введите имя потомка:");
             if (childName) {
+                // Генерируем случайный ID, чтобы избежать дублей
+                const childId = "id" + Math.random().toString(36).substr(2, 5);
                 currentGraphDefinition += `\n    ${selectedNodeId} --> ${childId}[${childName}]`;
             }
         } 
         else if (type === 'delete') {
-            if (confirm("Удалить этот узел и связи?")) {
+            if (confirm(`Удалить узел ${selectedNodeId} и все его связи?`)) {
                 const lines = currentGraphDefinition.split('\n');
+                // Оставляем только те строки, где нет упоминания этого ID
                 currentGraphDefinition = lines.filter(line => !line.includes(selectedNodeId)).join('\n');
             }
         }
@@ -135,12 +207,20 @@
         renderGraph();
     }
 
-    function exportCode() {
-        console.log("Текущий код графа:\n", currentGraphDefinition);
-        alert("Код выведен в консоль (F12)");
+    function resetView() {
+        if (window.panZoom) {
+            window.panZoom.reset();
+            window.panZoom.center();
+        }
     }
 
-    // Первый запуск
+    function exportCode() {
+        console.log("=== ТЕКУЩИЙ КОД ГРАФА ===");
+        console.log(currentGraphDefinition);
+        alert("Код скопирован в консоль разработчика (F12)");
+    }
+
+    // Запуск при загрузке
     window.onload = renderGraph;
 </script>
 
