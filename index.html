@@ -2,131 +2,132 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Библейская Родословная</title>
+    <title>Библейское Древо</title>
     <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js"></script>
     <style>
         body { margin: 0; background-color: #2b1d1a; font-family: 'Georgia', serif; overflow: hidden; }
         #scroll-frame {
-            width: 96vw; height: 90vh; margin: 2vh auto;
-            background: #fdf5e6; border: 10px double #5d4037;
-            position: relative; display: flex; flex-direction: column;
+            width: 100vw; height: 100vh;
+            background: #fdf5e6; position: relative; display: flex; flex-direction: column;
         }
         #tree-viewer { flex-grow: 1; cursor: grab; background: #fdf5e6; }
         
-        /* КАРТОЧКА */
+        /* КАРТОЧКА ИНФОРМАЦИИ */
         #overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 90; }
         #infobox {
             display: none; position: fixed; z-index: 100; left: 50%; top: 50%; transform: translate(-50%, -50%);
-            width: 350px; background: #fffcf5; padding: 25px; border: 4px double #5d4037; text-align: center;
+            width: 320px; background: #fffcf5; padding: 20px; border: 3px double #5d4037; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
-        .close-btn { margin-top: 15px; background: #5d4037; color: white; border: none; padding: 10px 20px; cursor: pointer; }
-        
-        /* КНОПКИ МАСШТАБА */
-        .zoom-controls { position: absolute; bottom: 20px; right: 20px; z-index: 10; display: flex; flex-direction: column; }
-        .zoom-controls button { background: #5d4037; color: white; border: 1px solid #fdf5e6; padding: 10px; cursor: pointer; font-size: 18px; margin: 2px; }
+        .close-btn { margin-top: 15px; background: #5d4037; color: white; border: none; padding: 8px 15px; cursor: pointer; }
+
+        /* МИНИ-КНОПКИ УПРАВЛЕНИЯ */
+        .zoom-controls { 
+            position: absolute; bottom: 15px; right: 15px; z-index: 10; 
+            display: flex; flex-direction: column; gap: 5px;
+        }
+        .zoom-controls button { 
+            width: 35px; height: 35px; border-radius: 50%;
+            background: rgba(93, 64, 55, 0.7); color: white; 
+            border: 1px solid #fdf5e6; cursor: pointer; font-size: 20px;
+            display: flex; align-items: center; justify-content: center;
+            transition: 0.3s;
+        }
+        .zoom-controls button:hover { background: rgba(93, 64, 55, 1); }
+        .btn-reset { font-size: 10px !important; text-transform: uppercase; }
+
+        header { background: #5d4037; color: #fdf5e6; text-align: center; padding: 5px; font-size: 12px; }
     </style>
 </head>
 <body>
 
 <div id="overlay" onclick="closeInfo()"></div>
 <div id="infobox">
-    <h2 id="p-name">Имя</h2>
-    <hr>
+    <h2 id="p-name" style="margin:0; color:#5d4037;">Имя</h2>
+    <hr style="border:0; border-top:1px solid #5d4037;">
     <p><strong>Мать:</strong> <span id="p-mother">-</span></p>
-    <p id="p-desc">Описание</p>
+    <p id="p-desc" style="font-size: 14px;">Описание</p>
     <button class="close-btn" onclick="closeInfo()">Закрыть</button>
 </div>
 
 <div id="scroll-frame">
-    <div style="text-align:center; padding: 10px; border-bottom: 1px solid #5d4037;">
-        <h1 style="margin:0;">РОДОСЛОВИЕ ОТ АДАМА ДО ПЛЕНА</h1>
-    </div>
+    <header>КНИГА РОДОСЛОВИЯ: ОТ АДАМА ДО ВАВИЛОНСКОГО ПЛЕНА (Кликните на имя для деталей)</header>
 
     <div id="tree-viewer">
         <div class="mermaid">
             graph TD
-                %% 1. ОТ АДАМА ДО НОЯ
-                Adam[Адам] --> Cain[Каин] & Abel[Авель] & Seth[Сиф]
-                Cain --> Enoch_C[Енох] --> Irad[Ирад] --> Mehujael[Мехиаэль] --> Methusael[Мафусал] --> Lamech_C[Ламех]
-                Lamech_C --> Jabal[Явал] & Jubal[Ювал] & Tubalcain[Тувал-Каин] & Naamah[Наама]
-                Seth --> Noah[Ной]
-
-                %% 2. НАРОДЫ
-                Noah --> Shem[Сим] & Ham[Хам] & Japheth[Яфет]
+                %% НАЧАЛО
+                Адам --> Каин & Авель & Сиф
+                Каин --> Енох_К[Енох] --> Ирад --> Мехиаэль --> Мафусал_К[Мафусал] --> Ламех_К[Ламех]
+                Ламех_К --> Явал & Ювал & Тувал-Каин & Наама
+                Сиф --> Ной
+                Ной --> Сим & Хам & Яфет
                 
-                Japheth --> Gomer[Гомер] & Magog[Магог] & Madai[Мадай] & Javan[Яван] & Tubal[Тувал] & Meshech[Мешех] & Tiras[Тирас]
-                Gomer --> Ashkenaz[Ашкеназ] & Riphath[Рифат] & Togarmah[Тогарма]
-                Javan --> Elishah[Элиша] & Tarshish[Таршиш] & Kittim[Киттим] & Dodanim[Доданим]
-
-                Ham --> Cush[Куш] & Mizraim[Мицраим] & Phut[Пут] & Canaan[Ханаан]
-                Cush --> Seba[Сева] & Havilah[Хавила] & Sabtah[Савта] & Raamah[Раама] & Nimrod[Нимрод]
-                Mizraim --> Ludim[Лудим] & Casluhim[Каслухим] --> Philistines[Филистимляне]
-                Canaan --> Sidon[Сидон] & Heth[Хет]
-
-                %% 3. ПАТРИАРХИ
-                Shem --> Abraham[Авраам] --> Isaac[Исаак] --> Jacob[Иаков]
-                Jacob --> Reuben[Рувим] & Simeon[Симеон] & Levi[Левий] & Judah[Иуда] & Joseph[Иосиф] & Benjamin[Вениамин]
-
-                %% 4. ЦАРИ С МАТЕРЯМИ
-                Judah --> Pharez[Фарес] --> David[Давид]
-                David --> Solomon[Соломон]
-                Solomon --> Rehoboam[Ровоам]
-                Rehoboam --> Abia[Авия]
-                Abia --> Asa[Аса] --> Josaphat[Иосафат] --> Joram[Иорам]
+                %% НАРОДЫ
+                Яфет --> Гомер & Магог & Мадай & Яван & Тувал & Мешех & Тирас
+                Хам --> Куш & Мицраим & Пут & Ханаан
+                Куш --> Нимрод
+                Мицраим --> Филистимляне
                 
-                Joram --> Ahaziah[Охозия]
-                Joram --> Uzziah[Уззия]
+                %% ЛИНИЯ К ДАВИДУ
+                Сим --> Авраам --> Исаак --> Иаков
+                Иаков --> Рувим & Симеон & Левий & Иуда & Иосиф & Вениамин
+                Иуда --> Фарес --> Есром --> Арам --> Аминадав --> Наассон --> Салмон --> Вооз --> Овид --> Иессей --> Давид
                 
-                Ahaziah --> Joash[Иоас]
-                Joash --> Amaziah[Амасия]
-                Amaziah --> Azariah[Азария]
+                %% ЦАРИ
+                Давид --> Соломон
+                Соломон --> Ровоам
+                Ровоам --> Авия
+                Авия --> Аса --> Иосафат --> Иорам
+                Иорам --> Охозия & Уззия
+                Охозия --> Иоас --> Амасия --> Азария
+                Уззия --> Иофам --> Ахаз --> Езекия --> Манассия --> Амон --> Иосия
+                Иосия --> Иоаким & Седекия & Шаллум
+                Иоаким --> Иехония
                 
-                Uzziah --> Jotham[Иофам] --> Ahaz[Ахаз] --> Hezekiah[Езекия]
-                Hezekiah --> Manasseh[Манассия] --> Amon[Амон] --> Josiah[Иосия]
-                
-                Josiah --> Jehoiakim[Иоаким] & Zedekiah[Седекия] & Shallum[Шаллум]
-                Jehoiakim --> Jeconiah[Иехония]
+                %% ПОСЛЕ ПЛЕНА
+                Иехония --> Салафиил & Педая
+                Салафиил --> Зоровавель
+                Зоровавель --> Авиуд --> Элиаким --> Азор --> Садок --> Ахим --> Элиуд --> Элеазар --> Матфан --> Иаков_Н[Иаков] --> Иосиф_Н[Иосиф]
 
-                %% 5. ПОСЛЕ ПЛЕНА
-                Jeconiah --> Shealtiel[Салафиил] & Pedaiah[Педая]
-                Shealtiel --> Zerubbabel[Зоровавель]
-                Pedaiah --> Zerubbabel
-                
-                Zerubbabel --> Abiud[Авиуд] --> Eliakim[Элиаким] --> Azor[Азор] --> Joseph_N[Иосиф]
+                %% КЛИКИ (ID должны совпадать с именами в схеме)
+                click Адам call showInfo()
+                click Каин call showInfo()
+                click Явал call showInfo()
+                click Тувал-Каин call showInfo()
+                click Наама call showInfo()
+                click Соломон call showInfo()
+                click Ровоам call showInfo()
+                click Авия call showInfo()
+                click Иехония call showInfo()
+                click Зоровавель call showInfo()
+                click Иосиф_Н call showInfo()
 
-                %% КЛИКИ ДЛЯ КАРТОЧЕК
-                click Adam call showInfo()
-                click Cain call showInfo()
-                click Jabal call showInfo()
-                click Tubalcain call showInfo()
-                click Solomon call showInfo()
-                click Rehoboam call showInfo()
-                click Abia call showInfo()
-                click Jeconiah call showInfo()
-                click Zerubbabel call showInfo()
+                classDef important fill:#efdfbb,stroke:#8b4513,stroke-width:2px;
+                class Адам,Ной,Авраам,Давид,Соломон,Зоровавель,Иосиф_Н important;
         </div>
     </div>
 
     <div class="zoom-controls">
         <button onclick="zoomIn()">+</button>
-        <button onclick="zoomOut()">-</button>
-        <button onclick="resetZoom()">Reset</button>
+        <button onclick="zoomOut()">−</button>
+        <button class="btn-reset" onclick="resetZoom()">Центр</button>
     </div>
 </div>
 
 <script>
-    // БАЗА ДАННЫХ (ИНФОРМАЦИЯ В КАРТОЧКАХ)
     const familyData = {
-        "Adam": { name: "Адам", mother: "Сотворен Богом", desc: "Первый человек." },
-        "Cain": { name: "Каин", mother: "Ева", desc: "Первенец Адама." },
-        "Jabal": { name: "Явал", mother: "Ада", desc: "Отец живущих в шатрах." },
-        "Tubalcain": { name: "Тувал-Каин", mother: "Цилла", desc: "Ковач меди и железа." },
-        "Solomon": { name: "Соломон", mother: "Вирсавия", desc: "Строитель Храма." },
-        "Rehoboam": { name: "Ровоам", mother: "Наама (Аммонитянка)", desc: "Царь Иудеи." },
-        "Abia": { name: "Авия", mother: "Мааха (дочь Авессалома)", desc: "Царь Иудеи." },
-        "Jeconiah": { name: "Иехония", mother: "Нехушта (дочь Элнафана)", desc: "Царь периода Плена." },
-        "Zerubbabel": { name: "Зоровавель", mother: "Линия Давида", desc: "Вождь после плена." }
+        "Адам": { name: "Адам", mother: "Сотворен Богом", desc: "Первый человек." },
+        "Каин": { name: "Каин", mother: "Ева", desc: "Первенец Адама." },
+        "Явал": { name: "Явал", mother: "Ада", desc: "Отец живущих в шатрах." },
+        "Тувал-Каин": { name: "Тувал-Каин", mother: "Цилла", desc: "Ковач меди и железа." },
+        "Наама": { name: "Наама", mother: "Цилла", desc: "Дочь Ламеха, сестра Тувал-Каина." },
+        "Соломон": { name: "Соломон", mother: "Вирсавия", desc: "Сын Давида, строитель Храма." },
+        "Ровоам": { name: "Ровоам", mother: "Наама (Аммонитянка)", desc: "При нем царство разделилось." },
+        "Авия": { name: "Авия", mother: "Мааха (дочь Авессалома)", desc: "Царь Иудеи." },
+        "Иехония": { name: "Иехония", mother: "Нехушта", desc: "Уведен в Вавилонский плен." },
+        "Зоровавель": { name: "Зоровавель", mother: "Линия Салафиила/Педаи", desc: "Восстановитель Храма." },
+        "Иосиф_Н": { name: "Иосиф", mother: "Линия Иакова", desc: "Обручник Марии." }
     };
 
     mermaid.initialize({ startOnLoad: true, theme: 'base', securityLevel: 'loose' });
@@ -146,23 +147,26 @@
         document.getElementById('overlay').style.display = 'none';
     }
 
-    // НАСТРОЙКА МАСШТАБА
-    window.onload = function() {
-        setTimeout(() => {
-            const svg = document.querySelector('#tree-viewer svg');
-            if (svg) {
-                svg.setAttribute('width', '100%');
-                svg.setAttribute('height', '100%');
-                window.pz = svgPanZoom(svg, {
-                    zoomEnabled: true,
-                    controlIconsEnabled: false,
-                    center: true,
-                    minZoom: 0.01,
-                    maxZoom: 20
-                });
-            }
-        }, 1000);
-    };
+    // Инициализация масштаба
+    function initPanZoom() {
+        const svg = document.querySelector('#tree-viewer svg');
+        if (svg) {
+            svg.setAttribute('width', '100%');
+            svg.setAttribute('height', '100%');
+            window.pz = svgPanZoom(svg, {
+                zoomEnabled: true,
+                controlIconsEnabled: false,
+                center: true,
+                minZoom: 0.001,
+                maxZoom: 50,
+                mouseWheelZoomEnabled: true
+            });
+        } else {
+            setTimeout(initPanZoom, 200);
+        }
+    }
+
+    window.onload = initPanZoom;
 
     function zoomIn() { if(window.pz) window.pz.zoomIn(); }
     function zoomOut() { if(window.pz) window.pz.zoomOut(); }
