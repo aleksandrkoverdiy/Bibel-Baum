@@ -2,38 +2,52 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Библейское Древо: Интерактив</title>
+    <title>Библейское Древо: Навигатор</title>
     <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js"></script>
     <style>
         body, html { 
             margin: 0; padding: 0; width: 100%; height: 100%; 
-            background-color: #fdf5e6; overflow: hidden; 
+            background-color: #fdf5e6; overflow: hidden; font-family: 'Georgia', serif;
         }
         
-        #tree-viewer { 
-            width: 100vw; height: 100vh; 
-            position: absolute; top: 0; left: 0;
-            cursor: grab; background: #fdf5e6;
-        }
+        #tree-viewer { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; cursor: grab; background: #fdf5e6; z-index: 1; }
 
-        /* Окно информации */
-        #overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100; }
+        /* ПАНЕЛЬ ПОИСКА */
+        .search-container {
+            position: fixed; top: 20px; left: 20px; z-index: 100;
+            background: rgba(255, 252, 245, 0.9); padding: 10px;
+            border: 2px solid #8b4513; border-radius: 5px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            display: flex; gap: 5px;
+        }
+        #search-input { 
+            padding: 8px; border: 1px solid #8b4513; width: 200px; 
+            background: #fff; font-family: 'Georgia', serif;
+        }
+        .search-btn { background: #8b4513; color: white; border: none; padding: 8px 15px; cursor: pointer; }
+
+        /* ОКНО ИНФОРМАЦИИ */
+        #overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 110; }
         #infobox {
-            display: none; position: fixed; z-index: 110; 
-            left: 50%; top: 50%; transform: translate(-50%, -50%);
-            width: 320px; background: #fffcf5; padding: 25px; 
-            border: 4px double #8b4513; text-align: center;
-            font-family: 'Georgia', serif; box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+            display: none; position: fixed; z-index: 120; left: 50%; top: 50%; transform: translate(-50%, -50%);
+            width: 320px; background: #fffcf5; padding: 25px; border: 4px double #8b4513; text-align: center;
         }
-        .close-btn { margin-top: 15px; background: #8b4513; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 4px; }
+        .close-btn { margin-top: 15px; background: #8b4513; color: white; border: none; padding: 10px 20px; cursor: pointer; }
 
-        /* Стиль для кликабельных узлов в SVG */
-        .clickable-node { cursor: pointer !important; }
-        .clickable-node:hover rect { fill: #fff3e0 !important; stroke-width: 3px !important; }
+        /* АНИМАЦИЯ ПОДСВЕТКИ ПРИ ПОИСКЕ */
+        @keyframes highlightFound {
+            0% { stroke: red; stroke-width: 10px; }
+            100% { stroke: #d4af37; stroke-width: 4px; }
+        }
+        .found-node rect { animation: highlightFound 3s forwards !important; }
     </style>
 </head>
 <body>
+
+<div class="search-container">
+    <input type="text" id="search-input" placeholder="Введите имя..." onkeypress="if(event.keyCode==13) findPerson()">
+    <button class="search-btn" onclick="findPerson()">Найти</button>
+</div>
 
 <div id="overlay" onclick="closeInfo()"></div>
 <div id="infobox">
@@ -47,7 +61,7 @@
 <div id="tree-viewer">
     <div class="mermaid">
         graph TD
-            %% --- СТРУКТУРА ---
+            %% СТРУКТУРА
             Адам --> Каин & Авель & Сиф
             Каин --> Енох_К[Енох] --> Ирад --> Мехиаэль --> Мафусал_К[Мафусал] --> Ламех_К[Ламех]
             Ламех_К --> Явал & Ювал & Тувал-Каин & Наама
@@ -62,7 +76,7 @@
             Иехония --> Салафиил & Педая --> Зоровавель
             Зоровавель --> Авиуд --> Элиаким --> Азор --> Садок --> Ахим --> Элиуд --> Элеазар --> Матфан --> Иаков_Н[Иаков] --> Иосиф_Н[Иосиф]
 
-            %% --- КЛИКИ (ID должны совпадать с именами) ---
+            %% КЛИКИ
             click Адам call showInfo()
             click Каин call showInfo()
             click Явал call showInfo()
@@ -74,35 +88,27 @@
             click Зоровавель call showInfo()
             click Иосиф_Н call showInfo()
 
-            %% --- СТИЛИЗАЦИЯ РАМОК ---
-            %% Класс infoBoxed добавляет жирную золотистую рамку для тех, у кого есть инфо
+            %% РАМКИ ДЛЯ ТЕХ У КОГО ЕСТЬ ОПИСАНИЕ
             classDef infoBoxed fill:#fff9f0,stroke:#d4af37,stroke-width:4px,color:#3e2723;
-            classDef normal fill:#fdf5e6,stroke:#8b4513,stroke-width:1px;
-
             class Адам,Каин,Явал,Наама,Соломон,Ровоам,Авия,Иехония,Зоровавель,Иосиф_Н infoBoxed;
     </div>
 </div>
 
 <script>
     const familyData = {
-        "Адам": { name: "Адам", mother: "Бог", desc: "Первый человек, сотворенный по образу Божию." },
-        "Каин": { name: "Каин", mother: "Ева", desc: "Первенец человечества, земледелец." },
-        "Явал": { name: "Явал", mother: "Ада", desc: "Отец живущих в шатрах и пастухов." },
-        "Наама": { name: "Наама", mother: "Цилла", desc: "Дочь Ламеха, согласно преданию — жена Ноя." },
-        "Соломон": { name: "Соломон", mother: "Вирсавия", desc: "Сын Давида, мудрейший царь Израиля." },
-        "Ровоам": { name: "Ровоам", mother: "Наама (Аммонитянка)", desc: "Сын Соломона, при котором произошло разделение царства." },
-        "Авия": { name: "Авия", mother: "Мааха", desc: "Царь Иудеи, воевавший с Иеровоамом." },
-        "Иехония": { name: "Иехония", mother: "Нехушта", desc: "Царь, уведенный Навуходоносором в плен." },
-        "Зоровавель": { name: "Зоровавель", mother: "Линия Давида", desc: "Возглавил возвращение иудеев из плена." },
-        "Иосиф_Н": { name: "Иосиф", mother: "Линия Иакова", desc: "Обручник Девы Марии." }
+        "Адам": { name: "Адам", mother: "Бог", desc: "Первый человек." },
+        "Каин": { name: "Каин", mother: "Ева", desc: "Старший сын Адама." },
+        "Явал": { name: "Явал", mother: "Ада", desc: "Родоначальник живущих в шатрах." },
+        "Наама": { name: "Наама", mother: "Цилла", desc: "Дочь Ламеха." },
+        "Соломон": { name: "Соломон", mother: "Вирсавия", desc: "Строитель Храма." },
+        "Ровоам": { name: "Ровоам", mother: "Наама", desc: "Сын Соломона." },
+        "Авия": { name: "Авия", mother: "Мааха", desc: "Царь Иудеи." },
+        "Иехония": { name: "Иехония", mother: "Нехушта", desc: "Царь в плену." },
+        "Зоровавель": { name: "Зоровавель", mother: "Линия Давида", desc: "Вернул народ из плена." },
+        "Иосиф_Н": { name: "Иосиф", mother: "Линия Иакова", desc: "Обручник Марии." }
     };
 
-    mermaid.initialize({ 
-        startOnLoad: true, 
-        theme: 'base',
-        securityLevel: 'loose', 
-        useMaxWidth: false
-    });
+    mermaid.initialize({ startOnLoad: true, theme: 'base', securityLevel: 'loose', useMaxWidth: false });
 
     function showInfo(id) {
         const p = familyData[id];
@@ -120,34 +126,55 @@
         document.getElementById('overlay').style.display = 'none';
     }
 
-    // Инициализация панорамирования и зума
+    // ФУНКЦИЯ ПОИСКА
+    function findPerson() {
+        const query = document.getElementById('search-input').value.trim().toLowerCase();
+        if (!query) return;
+
+        const nodes = document.querySelectorAll('.mermaid .node');
+        let targetNode = null;
+
+        nodes.forEach(node => {
+            const text = node.textContent.toLowerCase();
+            if (text.includes(query)) {
+                targetNode = node;
+            }
+            node.classList.remove('found-node'); // Сброс старой подсветки
+        });
+
+        if (targetNode && window.pz) {
+            // Вычисляем координаты
+            const bBox = targetNode.getBBox();
+            const svg = document.querySelector('svg');
+            const clientRect = svg.getBoundingClientRect();
+            
+            const zoom = window.pz.getZoom();
+            const pan = window.pz.getPan();
+
+            // Математика центрирования
+            const targetX = (bBox.x + bBox.width / 2) * zoom + pan.x;
+            const targetY = (bBox.y + bBox.height / 2) * zoom + pan.y;
+
+            const offsetX = clientRect.width / 2 - targetX;
+            const offsetY = clientRect.height / 2 - targetY;
+
+            window.pz.panBy({x: offsetX, y: offsetY});
+            window.pz.zoomAtPoint(1.5, {x: clientRect.width / 2, y: clientRect.height / 2});
+            
+            targetNode.classList.add('found-node');
+        } else {
+            alert("Имя не найдено на схеме");
+        }
+    }
+
     window.onload = function() {
         const interval = setInterval(() => {
             const svg = document.querySelector('.mermaid svg');
             if (svg) {
                 clearInterval(interval);
-                svg.style.width = '100vw';
-                svg.style.height = '100vh';
-
-                // Настройка PanZoom
+                svg.style.width = '100vw'; svg.style.height = '100vh';
                 window.pz = svgPanZoom(svg, {
-                    zoomEnabled: true,
-                    controlIconsEnabled: false,
-                    center: true,
-                    fit: true,
-                    minZoom: 0.001,
-                    maxZoom: 100,
-                    // Это позволяет кликам проходить сквозь слой панорамирования
-                    beforePan: function(oldPan, newPan) {
-                        return true; 
-                    }
-                });
-
-                // Добавляем класс clickable-node всем узлам, на которые можно нажать
-                document.querySelectorAll('.mermaid .node').forEach(node => {
-                    if (node.getAttribute('onclick') || node.classList.contains('infoBoxed')) {
-                        node.classList.add('clickable-node');
-                    }
+                    zoomEnabled: true, controlIconsEnabled: false, center: true, fit: true, minZoom: 0.001, maxZoom: 100
                 });
             }
         }, 300);
