@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Редактор Родословия 2.0</title>
+    <title>Редактор Родословия 3.0</title>
     
     <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js"></script>
@@ -11,54 +11,58 @@
     <style>
         body { 
             margin: 0; background-color: #3e2723; 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            color: #3e2723; overflow: hidden;
+            font-family: 'Segoe UI', serif;
+            overflow: hidden;
         }
 
         #scroll-wrapper {
-            width: 95vw; height: 90vh; margin: 5vh auto; 
+            width: 95vw; height: 92vh; margin: 4vh auto; 
             background: #fdf5e6; border: 12px solid #5d4037;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-            position: relative; display: flex; flex-direction: column;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+            position: relative; 
+            overflow: hidden; /* Важно: холст не должен выходить за границы */
         }
 
+        /* Заголовок теперь парит над схемой */
         .header { 
+            position: absolute; top: 0; left: 0; right: 0;
             padding: 15px; text-align: center; 
-            background: rgba(255,255,255,0.3);
-            border-bottom: 2px double #5d4037; 
+            background: rgba(253, 245, 230, 0.8);
+            border-bottom: 1px solid rgba(93, 64, 55, 0.2);
+            z-index: 5; pointer-events: none; /* Пропускает клики сквозь себя к схеме */
         }
+        .header h2, .header small { pointer-events: auto; }
 
+        /* Холст занимает 100% пространства свитка */
         #tree-container { 
-            flex-grow: 1; overflow: hidden; position: relative;
-            background-image: radial-gradient(circle, #f3e5ab 1px, transparent 1px);
-            background-size: 20px 20px;
+            width: 100%; height: 100%; 
+            position: absolute; top: 0; left: 0;
+            cursor: grab;
         }
 
-        /* КОНТЕКСТНОЕ МЕНЮ */
         #context-menu {
             display: none; position: fixed; background: #fff;
-            border: 2px solid #5d4037; border-radius: 4px;
-            box-shadow: 4px 4px 15px rgba(0,0,0,0.4);
+            border: 2px solid #5d4037; box-shadow: 4px 4px 15px rgba(0,0,0,0.4);
             z-index: 9999; min-width: 180px;
         }
         #context-menu div {
             padding: 12px 15px; cursor: pointer; border-bottom: 1px solid #eee;
-            font-size: 14px; transition: background 0.2s;
         }
         #context-menu div:hover { background: #f0e6d2; }
-        #context-menu div:last-child { border-bottom: none; }
 
         .controls { position: absolute; bottom: 20px; right: 20px; z-index: 10; display: flex; gap: 10px; }
         button { 
             background: #5d4037; color: white; border: none; 
             padding: 10px 15px; cursor: pointer; border-radius: 4px;
-            font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.3);
         }
-        button:hover { background: #795548; }
 
-        /* Стиль для Mermaid узлов */
-        .node rect, .node circle { stroke-width: 2px !important; }
-        .node:hover { cursor: context-menu; }
+        /* Фикс для SVG Mermaid */
+        svg {
+            display: block;
+            width: 100% !important;
+            height: 100% !important;
+            max-width: none !important;
+        }
     </style>
 </head>
 <body>
@@ -71,96 +75,73 @@
 
 <div id="scroll-wrapper">
     <div class="header">
-        <h2 style="margin:0; letter-spacing: 2px;">ДРЕВО РОДОСЛОВИЯ</h2>
-        <small>Нажмите <b>Правой Кнопкой Мыши</b> на имя для редактирования</small>
+        <h2 style="margin:0;">ДРЕВО РОДОСЛОВИЯ</h2>
+        <small>ПКМ на имя — редактировать. Колесико — масштаб.</small>
     </div>
     
-    <div id="tree-container">
-        </div>
+    <div id="tree-container"></div>
 
     <div class="controls">
         <button onclick="resetView()">Центрировать</button>
-        <button onclick="exportCode()" style="background: #2e7d32;">Код в консоль</button>
+        <button onclick="exportCode()" style="background: #2e7d32;">В консоль</button>
     </div>
 </div>
 
 <script>
     let selectedNodeId = null;
-    // Начальное состояние графа
     let currentGraphDefinition = `graph TD
     Adam[Адам] --> Seth[Сиф]
     Seth --> Enos[Енос]
     Adam --> Cain[Каин]`;
 
-    // Инициализация Mermaid
     mermaid.initialize({ 
         startOnLoad: false, 
         securityLevel: 'loose', 
-        theme: 'base',
-        themeVariables: {
-            primaryColor: '#fffcf5',
-            lineColor: '#5d4037',
-            nodeBorder: '#5d4037',
-            fontFamily: 'Times New Roman'
-        }
+        theme: 'neutral'
     });
 
-    // ГЛАВНАЯ ФУНКЦИЯ ОТРИСОВКИ
     async function renderGraph() {
         const container = document.getElementById('tree-container');
         
-        // 1. Очистка старого зума
         if (window.panZoom) {
             window.panZoom.destroy();
             window.panZoom = null;
         }
 
-        // 2. Очистка контейнера
-        container.innerHTML = `<div class="mermaid" id="mainTree">${currentGraphDefinition}</div>`;
+        // Очищаем и создаем новый div для рендера
+        container.innerHTML = `<div id="temp-mermaid-holder">${currentGraphDefinition}</div>`;
 
         try {
-            // 3. Рендер Mermaid
-            await mermaid.run({
-                nodes: [document.getElementById('mainTree')]
-            });
-
-            // 4. Инициализация зума после небольшой паузы
-            setTimeout(initPanZoom, 100);
+            const { svg } = await mermaid.render('mermaid-svg-' + Date.now(), currentGraphDefinition);
+            container.innerHTML = svg;
+            
+            setTimeout(initPanZoom, 50);
         } catch (err) {
             console.error("Ошибка Mermaid:", err);
         }
     }
 
     function initPanZoom() {
-        const svg = document.querySelector('#tree-container svg');
-        if (svg) {
-            svg.style.width = '100%';
-            svg.style.height = '100%';
-            svg.style.maxWidth = '100%';
-
-            window.panZoom = svgPanZoom(svg, {
+        const svgElement = document.querySelector('#tree-container svg');
+        if (svgElement) {
+            window.panZoom = svgPanZoom(svgElement, {
                 zoomEnabled: true,
                 controlIconsEnabled: true,
                 fit: true,
                 center: true,
-                minZoom: 0.05,
-                maxZoom: 20
+                minZoom: 0.01,
+                maxZoom: 50
             });
         }
     }
 
-    // ЛОГИКА КОНТЕКСТНОГО МЕНЮ
+    // Слушатель правой кнопки мыши
     window.addEventListener('contextmenu', function(e) {
-        // Ищем, нажат ли узел (Mermaid помечает их классом .node)
         const node = e.target.closest('.node');
-        
         if (node) {
             e.preventDefault();
-            // Извлекаем чистый ID из формата Mermaid (например, flowchart-Adam-45)
-            const fullId = node.id;
-            const parts = fullId.split('-');
-            // Обычно ID находится между префиксом и индексом
-            selectedNodeId = parts[1]; 
+            // Находим ID в атрибутах или тексте
+            selectedNodeId = node.getAttribute('id').split('-')[1]; 
 
             const menu = document.getElementById('context-menu');
             menu.style.display = 'block';
@@ -171,56 +152,49 @@
         }
     });
 
-    // Закрыть меню при обычном клике
     window.addEventListener('click', () => {
         document.getElementById('context-menu').style.display = 'none';
     });
 
-    // ДЕЙСТВИЯ МЕНЮ
     function menuAction(type) {
         if (!selectedNodeId) return;
 
         if (type === 'edit') {
-            const newName = prompt("Введите новое имя для узла " + selectedNodeId + ":");
+            const newName = prompt("Новое имя:");
             if (newName) {
-                // Регулярное выражение ищет ID[Текст]
                 const regex = new RegExp(`${selectedNodeId}\\[.*?\\]`, 'g');
                 currentGraphDefinition = currentGraphDefinition.replace(regex, `${selectedNodeId}[${newName}]`);
             }
         } 
         else if (type === 'add') {
-            const childName = prompt("Введите имя потомка:");
+            const childName = prompt("Имя потомка:");
             if (childName) {
-                // Генерируем случайный ID, чтобы избежать дублей
                 const childId = "id" + Math.random().toString(36).substr(2, 5);
                 currentGraphDefinition += `\n    ${selectedNodeId} --> ${childId}[${childName}]`;
             }
         } 
         else if (type === 'delete') {
-            if (confirm(`Удалить узел ${selectedNodeId} и все его связи?`)) {
+            if (confirm("Удалить?")) {
                 const lines = currentGraphDefinition.split('\n');
-                // Оставляем только те строки, где нет упоминания этого ID
                 currentGraphDefinition = lines.filter(line => !line.includes(selectedNodeId)).join('\n');
             }
         }
-
         renderGraph();
     }
 
     function resetView() {
         if (window.panZoom) {
             window.panZoom.reset();
+            window.panZoom.fit();
             window.panZoom.center();
         }
     }
 
     function exportCode() {
-        console.log("=== ТЕКУЩИЙ КОД ГРАФА ===");
         console.log(currentGraphDefinition);
-        alert("Код скопирован в консоль разработчика (F12)");
+        alert("Код в консоли (F12)");
     }
 
-    // Запуск при загрузке
     window.onload = renderGraph;
 </script>
 
