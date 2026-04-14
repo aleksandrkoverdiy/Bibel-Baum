@@ -6,61 +6,51 @@
     <title>Библейская Родословная</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #2c1e14; font-family: 'Georgia', serif; }
+        #viewport { width: 100vw; height: 100vh; overflow: hidden; position: relative; background: #2c1e14; }
         
-        /* Свиток */
-        #viewport { width: 100vw; height: 100vh; cursor: grab; overflow: hidden; position: relative; }
         #scroll-container { 
             position: absolute; 
             width: 5000px; height: 5000px; 
             background: #f4e4bc url('https://www.transparenttextures.com/patterns/parchment.png');
             transform-origin: 0 0;
+            transition: transform 0.1s ease-out;
         }
 
-        /* Поиск */
         #search-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 100; }
-        #search { padding: 10px 20px; border-radius: 20px; border: 2px solid #8b4513; background: #fff9e6; width: 250px; outline: none; }
+        #search { padding: 10px 20px; border-radius: 20px; border: 2px solid #8b4513; background: #fff9e6; width: 250px; outline: none; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
 
-        /* Имена */
         .person {
             position: absolute;
-            padding: 8px 15px;
-            background: rgba(139, 69, 19, 0.05);
-            border: 1px solid transparent;
+            padding: 10px 18px;
+            background: rgba(255, 255, 255, 0.4);
+            border: 1px solid rgba(139, 69, 19, 0.3);
             border-radius: 4px;
-            cursor: pointer;
+            cursor: move; /* Курсор перемещения */
             text-align: center;
             white-space: nowrap;
             user-select: none;
             color: #3e2723;
+            font-size: 16px;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
         }
-        .has-info { border: 2px solid #8b4513; box-shadow: 0 0 5px rgba(139, 69, 19, 0.3); }
-        .highlight { background: #ffeb3b !important; border: 2px solid #f44336 !important; }
+        
+        .has-info { border: 2px solid #8b4513; background: rgba(255, 255, 255, 0.7); }
+        .highlight { background: #ffeb3b !important; border: 2px solid #f44336 !important; z-index: 100; }
 
-        /* Линии */
-        .line { position: absolute; background: #8b4513; height: 2px; transform-origin: 0 0; pointer-events: none; opacity: 0.6; }
+        .line { position: absolute; background: #8b4513; height: 2px; transform-origin: 0 0; pointer-events: none; opacity: 0.5; }
 
-        /* Меню */
         #context-menu {
             position: fixed; display: none; background: #fff; border: 1px solid #8b4513;
-            box-shadow: 3px 3px 10px rgba(0,0,0,0.2); z-index: 1000; min-width: 180px;
+            box-shadow: 3px 3px 15px rgba(0,0,0,0.3); z-index: 2000; min-width: 200px;
         }
-        #context-menu div { padding: 10px 15px; cursor: pointer; border-bottom: 1px solid #eee; font-size: 14px; }
-        #context-menu div:last-child { border: none; }
+        #context-menu div { padding: 12px 16px; cursor: pointer; border-bottom: 1px solid #eee; font-size: 14px; }
         #context-menu div:hover { background: #fdf5e6; color: #8b4513; }
     </style>
 </head>
 <body>
 
-<div id="search-container">
-    <input type="text" id="search" placeholder="Найти имя в роду...">
-</div>
-
-<div id="viewport">
-    <div id="scroll-container">
-        <div id="tree-content"></div>
-    </div>
-</div>
-
+<div id="search-container"><input type="text" id="search" placeholder="Поиск по родословной..."></div>
+<div id="viewport"><div id="scroll-container"><div id="tree-content"></div></div></div>
 <div id="context-menu"></div>
 
 <script>
@@ -72,45 +62,64 @@
     let scale = 1;
     let isOwner = window.location.hash === '#admin';
     let familyData = JSON.parse(localStorage.getItem('bibleTree')) || [
-        { id: 1, name: "Адам", info: "Первый человек", x: 2500, y: 100, parentId: null }
+        { id: 1, name: "Адам", info: "Первый человек", x: 2400, y: 100, parentId: null }
     ];
 
-    // Отрисовка
+    let draggedElement = null;
+    let offset = { x: 0, y: 0 };
+
     function render() {
         content.innerHTML = '';
         familyData.forEach(person => {
-            // Создаем узел имени
             const div = document.createElement('div');
             div.className = `person ${person.info ? 'has-info' : ''}`;
-            div.id = `p-${person.id}`;
             div.style.left = person.x + 'px';
             div.style.top = person.y + 'px';
             div.innerText = person.name;
 
-            // ЛКМ: Просмотр инфо (для всех)
+            // Перетаскивание (только для админа)
+            if (isOwner) {
+                div.onmousedown = (e) => {
+                    if (e.button !== 0) return; // Только ЛКМ
+                    draggedElement = person;
+                    const rect = div.getBoundingClientRect();
+                    offset.x = (e.clientX - rect.left) / scale;
+                    offset.y = (e.clientY - rect.top) / scale;
+                    e.stopPropagation();
+                };
+            }
+
+            // Просмотр информации
             div.onclick = (e) => {
-                e.stopPropagation();
-                if (person.info) alert(`Информация о герое (${person.name}):\n\n${person.info}`);
+                if (person.info) alert(`${person.name}\n\n${person.info}`);
             };
 
-            // ПКМ: Меню (только админ)
             div.oncontextmenu = (e) => {
                 if (!isOwner) return;
-                e.preventDefault();
-                e.stopPropagation();
+                e.preventDefault(); e.stopPropagation();
                 showMenu(e.clientX, e.clientY, person);
             };
 
             content.appendChild(div);
 
-            // Рисуем линию к родителю
             if (person.parentId) {
                 const parent = familyData.find(p => p.id === person.parentId);
-                if (parent) drawLine(parent.x + 40, parent.y + 30, person.x + 40, person.y);
+                if (parent) drawLine(parent.x + 40, parent.y + 35, person.x + 40, person.y);
             }
         });
         localStorage.setItem('bibleTree', JSON.stringify(familyData));
     }
+
+    // Логика перемещения
+    window.onmousemove = (e) => {
+        if (draggedElement) {
+            const rect = container.getBoundingClientRect();
+            draggedElement.x = (e.clientX - rect.left) / scale - offset.x;
+            draggedElement.y = (e.clientY - rect.top) / scale - offset.y;
+            render();
+        }
+    };
+    window.onmouseup = () => { draggedElement = null; };
 
     function drawLine(x1, y1, x2, y2) {
         const length = Math.sqrt((x2-x1)**2 + (y2-y1)**2);
@@ -124,49 +133,40 @@
         content.appendChild(line);
     }
 
-    // Логика меню
     function showMenu(x, y, person) {
         menu.style.display = 'block';
         menu.style.left = x + 'px';
         menu.style.top = y + 'px';
-        
         if (person) {
             menu.innerHTML = `
-                <div onclick="addRelative(${person.id})">➕ Добавить наследника</div>
-                <div onclick="editName(${person.id})">📝 Редактировать имя</div>
-                <div onclick="editInfo(${person.id})">ℹ️ ${person.info ? 'Редактировать' : 'Добавить'} информацию</div>
-                <div onclick="deletePerson(${person.id})" style="color:red">🗑️ Удалить</div>
+                <div onclick="addRelative(${person.id})">👶 Добавить наследника</div>
+                <div onclick="editName(${person.id})">✏️ Изменить имя</div>
+                <div onclick="editInfo(${person.id})">📖 ${person.info ? 'Изм.' : 'Добавить'} информацию</div>
+                <div onclick="deletePerson(${person.id})" style="color:red">❌ Удалить</div>
             `;
         } else {
-            menu.innerHTML = `<div onclick="createNew(${x}, ${y})">🌟 Создать новое имя здесь</div>`;
+            const rect = container.getBoundingClientRect();
+            const realX = (x - rect.left) / scale;
+            const realY = (y - rect.top) / scale;
+            menu.innerHTML = `<div onclick="createNew(${realX}, ${realY})">👤 Создать родоначальника</div>`;
         }
     }
 
-    // Функции действий
-    window.createNew = (clickX, clickY) => {
-        const name = prompt("Введите имя:");
-        if (name) {
-            // Вычисляем координаты с учетом масштаба и прокрутки
-            const rect = container.getBoundingClientRect();
-            const realX = (clickX - rect.left) / scale;
-            const realY = (clickY - rect.top) / scale;
-            familyData.push({ id: Date.now(), name, info: "", x: realX, y: realY, parentId: null });
-            render();
-        }
+    window.createNew = (x, y) => {
+        const name = prompt("Имя:");
+        if (name) { familyData.push({ id: Date.now(), name, info: "", x: x, y: y, parentId: null }); render(); }
     };
 
     window.addRelative = (parentId) => {
         const name = prompt("Имя наследника:");
         if (name) {
             const parent = familyData.find(p => p.id === parentId);
-            // Смещение, чтобы не накладывались: вниз на 80 и чуть в сторону если детей много
-            const childrenCount = familyData.filter(p => p.parentId === parentId).length;
+            const count = familyData.filter(p => p.parentId === parentId).length;
+            // Увеличенный отступ: вниз на 120, вправо на 150 за каждого ребенка
             familyData.push({ 
-                id: Date.now(), 
-                name, 
-                info: "", 
-                x: parent.x + (childrenCount * 30), 
-                y: parent.y + 80, 
+                id: Date.now(), name, info: "", 
+                x: parent.x + (count * 150), 
+                y: parent.y + 120, 
                 parentId: parentId 
             });
             render();
@@ -174,51 +174,44 @@
     };
 
     window.editName = (id) => {
-        const person = familyData.find(p => p.id === id);
-        const newName = prompt("Изменить имя:", person.name);
-        if (newName) { person.name = newName; render(); }
+        const p = familyData.find(x => x.id === id);
+        const n = prompt("Имя:", p.name);
+        if (n) { p.name = n; render(); }
     };
 
     window.editInfo = (id) => {
-        const person = familyData.find(p => p.id === id);
-        const newInfo = prompt("Введите информацию о герое:", person.info);
-        if (newInfo !== null) { person.info = newInfo; render(); }
+        const p = familyData.find(x => x.id === id);
+        const i = prompt("Информация:", p.info);
+        if (i !== null) { p.info = i; render(); }
     };
 
     window.deletePerson = (id) => {
-        if (confirm("Удалить этого человека и его связи?")) {
-            familyData = familyData.filter(p => p.id !== id && p.parentId !== id);
-            render();
-        }
+        if (confirm("Удалить?")) { familyData = familyData.filter(p => p.id !== id); render(); }
     };
 
-    // Поиск
+    // Масштабирование
+    window.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const zoomSpeed = 0.1;
+        if (e.deltaY < 0) scale *= (1 + zoomSpeed);
+        else scale /= (1 + zoomSpeed);
+        scale = Math.min(Math.max(.2, scale), 3);
+        container.style.transform = `scale(${scale})`;
+    }, {passive: false});
+
     searchInput.oninput = () => {
         const val = searchInput.value.toLowerCase();
         document.querySelectorAll('.person').forEach(el => {
-            el.classList.remove('highlight');
-            if (val && el.innerText.toLowerCase().includes(val)) {
-                el.classList.add('highlight');
-            }
+            el.classList.toggle('highlight', val && el.innerText.toLowerCase().includes(val));
         });
     };
-
-    // Зум и перемещение
-    window.addEventListener('wheel', (e) => {
-        e.preventDefault();
-        const delta = e.deltaY > 0 ? 0.9 : 1.1;
-        scale = Math.min(Math.max(.1, scale * delta), 3);
-        container.style.transform = `scale(${scale})`;
-    }, {passive: false});
 
     window.oncontextmenu = (e) => {
         if (!isOwner) return;
         if (e.target.id === 'viewport' || e.target === container) {
-            e.preventDefault();
-            showMenu(e.clientX, e.clientY, null);
+            e.preventDefault(); showMenu(e.clientX, e.clientY, null);
         }
     };
-
     window.onclick = () => menu.style.display = 'none';
 
     render();
